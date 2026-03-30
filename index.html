@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Fitness">
+  <meta name="theme-color" content="#1a1a2e">
+  <meta name="description" content="Track your workouts - strength, cardio, and classes">
+
+  <title>Fitness Tracker</title>
+
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <header class="header">
+      <h1>Fitness Tracker</h1>
+      <input type="date" id="workout-date" class="date-picker">
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="tabs">
+      <button class="tab active" data-tab="strength">Strength</button>
+      <button class="tab" data-tab="cardio">Cardio</button>
+      <button class="tab" data-tab="classes">Classes</button>
+      <button class="tab" data-tab="reports">Reports</button>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="content">
+      <!-- Strength Training Section -->
+      <section id="strength-section" class="section active">
+        <!-- Add Exercise Form -->
+        <form id="add-exercise-form" class="add-form">
+          <div class="form-group">
+            <label for="exercise-name">Exercise</label>
+            <input type="text" id="exercise-name" placeholder="Search exercises..." autocomplete="off" required>
+            <ul id="exercise-suggestions" class="suggestions"></ul>
+          </div>
+
+          <div id="muscle-groups" class="muscle-groups"></div>
+
+          <div id="muscle-selector" class="muscle-selector" style="display: none;">
+            <label>Select muscle groups:</label>
+            <div class="muscle-checkboxes">
+              <label><input type="checkbox" value="chest"> Chest</label>
+              <label><input type="checkbox" value="back"> Back</label>
+              <label><input type="checkbox" value="shoulders"> Shoulders</label>
+              <label><input type="checkbox" value="biceps"> Biceps</label>
+              <label><input type="checkbox" value="triceps"> Triceps</label>
+              <label><input type="checkbox" value="core"> Core</label>
+              <label><input type="checkbox" value="quads"> Quads</label>
+              <label><input type="checkbox" value="hamstrings"> Hamstrings</label>
+              <label><input type="checkbox" value="glutes"> Glutes</label>
+              <label><input type="checkbox" value="calves"> Calves</label>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="weight">Weight (lbs)</label>
+              <input type="number" id="weight" placeholder="0" min="0" step="2.5" value="0">
+            </div>
+            <div class="form-group">
+              <label for="reps">Reps</label>
+              <input type="number" id="reps" placeholder="10" min="1" value="10">
+            </div>
+            <div class="form-group">
+              <label for="sets">Sets</label>
+              <input type="number" id="sets" placeholder="1" min="1" value="1" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="exercise-image">Photo (optional)</label>
+            <div class="image-upload">
+              <input type="file" id="exercise-image" accept="image/*" multiple>
+              <div id="image-preview" class="image-preview"></div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="exercise-notes">Notes (optional)</label>
+            <textarea id="exercise-notes" placeholder="Add notes about this exercise..." rows="2"></textarea>
+          </div>
+
+          <button type="submit" class="btn-primary">Add Exercise</button>
+        </form>
+
+        <!-- Today's Workout Log (All Activities) -->
+        <div class="workout-log">
+          <h2>Today's Workout</h2>
+          <ul id="all-activities-list" class="exercise-list"></ul>
+          <p id="all-empty-state" class="empty-state">No activities logged yet. Add your first exercise above!</p>
+        </div>
+      </section>
+
+      <!-- Cardio Section -->
+      <section id="cardio-section" class="section">
+        <form id="add-cardio-form" class="add-form">
+          <div class="form-group">
+            <label for="cardio-type">Activity</label>
+            <select id="cardio-type" required>
+              <option value="">Select activity...</option>
+              <option value="walking">Walking</option>
+              <option value="biking">Biking</option>
+              <option value="swimming">Swimming</option>
+              <option value="running">Running</option>
+              <option value="elliptical">Elliptical</option>
+              <option value="stairmaster">Stairmaster</option>
+              <option value="rowing">Rowing</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="cardio-duration">Duration (min)</label>
+              <input type="number" id="cardio-duration" placeholder="30" min="1" value="30">
+            </div>
+            <div class="form-group">
+              <label for="cardio-distance">Distance (mi)</label>
+              <input type="number" id="cardio-distance" placeholder="0" min="0" step="0.1" value="0">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="cardio-notes">Notes (optional)</label>
+            <textarea id="cardio-notes" placeholder="Add notes..." rows="2"></textarea>
+          </div>
+
+          <button type="submit" class="btn-primary">Add Cardio</button>
+        </form>
+
+        <div class="workout-log">
+          <h2>Today's Cardio</h2>
+          <ul id="cardio-list" class="exercise-list"></ul>
+          <p id="cardio-empty-state" class="empty-state">No cardio logged yet.</p>
+        </div>
+      </section>
+
+      <!-- Classes Section -->
+      <section id="classes-section" class="section">
+        <form id="add-class-form" class="add-form">
+          <div class="form-group">
+            <label for="class-name">Class Name</label>
+            <select id="class-name" required>
+              <option value="">Select class...</option>
+              <option value="Yoga">Yoga</option>
+              <option value="Zumba">Zumba</option>
+              <option value="Aqua Zumba">Aqua Zumba</option>
+              <option value="Tai Chi">Tai Chi</option>
+              <option value="Line Dance">Line Dance</option>
+              <option value="Pilates">Pilates</option>
+              <option value="Spin">Spin</option>
+              <option value="HIIT">HIIT</option>
+              <option value="Aerobics">Aerobics</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="class-duration">Duration (min)</label>
+            <input type="number" id="class-duration" placeholder="60" min="1" value="60">
+          </div>
+
+          <div class="form-group">
+            <label for="class-notes">Notes (optional)</label>
+            <textarea id="class-notes" placeholder="Add notes about this class..." rows="2"></textarea>
+          </div>
+
+          <button type="submit" class="btn-primary">Add Class</button>
+        </form>
+
+        <div class="workout-log">
+          <h2>Today's Classes</h2>
+          <ul id="class-list" class="exercise-list"></ul>
+          <p id="class-empty-state" class="empty-state">No classes logged yet.</p>
+        </div>
+      </section>
+
+      <!-- Reports Section -->
+      <section id="reports-section" class="section">
+        <!-- Time Period Selector -->
+        <div class="report-period-selector">
+          <select id="report-period">
+            <option value="week">This Week</option>
+            <option value="month">This Month</option>
+            <option value="year">This Year</option>
+            <option value="all">All Time</option>
+          </select>
+        </div>
+
+        <!-- Summary -->
+        <div class="report-card">
+          <h2 id="report-period-title">This Week</h2>
+          <div class="summary-grid">
+            <div class="summary-row">
+              <span class="summary-label">Workout Days</span>
+              <span class="summary-value" id="week-workout-days">0</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-label">Balance</span>
+              <span class="summary-value" id="week-balance">0</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-label">Upper Body</span>
+              <span class="summary-value" id="week-upper-body">0</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-label">Back</span>
+              <span class="summary-value" id="week-back">0</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-label">Lower Body</span>
+              <span class="summary-value" id="week-lower-body">0</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-label">Core</span>
+              <span class="summary-value" id="week-core">0</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-label">Cardio Minutes</span>
+              <span class="summary-value" id="week-cardio-mins">0</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-label">Classes</span>
+              <span class="summary-value" id="week-class-count">0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Strength Progress Chart -->
+        <div class="report-card">
+          <h2>Strength Progress</h2>
+          <div class="form-group">
+            <label for="progress-exercise">Select Exercise</label>
+            <select id="progress-exercise">
+              <option value="">Choose an exercise...</option>
+            </select>
+          </div>
+          <div id="progress-chart" class="progress-chart">
+            <p class="empty-state">Select an exercise to see your progress</p>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/exercises.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/app.js"></script>
+
+  <!-- Register Service Worker -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then((registration) => {
+            console.log('SW registered:', registration.scope);
+          })
+          .catch((error) => {
+            console.log('SW registration failed:', error);
+          });
+      });
+    }
+  </script>
+</body>
+</html>
