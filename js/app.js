@@ -68,10 +68,7 @@
     // Sign out (always set up, regardless of session state)
     signoutBtn.addEventListener('click', () => {
       FitnessDB.signOut();
-      appDiv.style.display = 'none';
-      loginScreen.style.display = 'flex';
-      document.getElementById('auth-email').value = '';
-      document.getElementById('auth-password').value = '';
+      window.location.reload();
     });
 
     // Restore existing session
@@ -90,9 +87,7 @@
       loginError.style.display = 'none';
       try {
         await FitnessDB.signIn(email, password);
-        loginScreen.style.display = 'none';
-        appDiv.style.display = 'block';
-        init();
+        window.location.reload();
       } catch (err) {
         loginError.textContent = err.message;
         loginError.style.display = 'block';
@@ -114,9 +109,7 @@
         loginError.style.display = 'none';
         // If session was created immediately, proceed
         if (FitnessDB.getCurrentUserId()) {
-          loginScreen.style.display = 'none';
-          appDiv.style.display = 'block';
-          init();
+          window.location.reload();
         } else {
           loginError.style.color = 'var(--success)';
           loginError.textContent = 'Account created! Please check your email to confirm, then sign in.';
