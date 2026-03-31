@@ -76,6 +76,8 @@
     // Cardio elements
     elements.cardioForm = UI.$('add-cardio-form');
     elements.cardioType = UI.$('cardio-type');
+    elements.bikeTypeGroup = UI.$('bike-type-group');
+    elements.bikeType = UI.$('bike-type');
     elements.cardioDuration = UI.$('cardio-duration');
     elements.cardioDistance = UI.$('cardio-distance');
     elements.cardioNotes = UI.$('cardio-notes');
@@ -207,6 +209,11 @@
     // Image input change
     elements.imageInput.addEventListener('change', handleImageSelect);
 
+    // Show/hide bike type selector
+    elements.cardioType.addEventListener('change', () => {
+      elements.bikeTypeGroup.style.display = elements.cardioType.value === 'biking' ? 'block' : 'none';
+    });
+
     // Cardio form submission
     elements.cardioForm.addEventListener('submit', handleCardioSubmit);
 
@@ -247,6 +254,7 @@
       date: currentDate,
       type: 'cardio',
       name: type,
+      subtype: type === 'biking' ? elements.bikeType.value : null,
       duration,
       distance,
       notes: notes || null
@@ -256,6 +264,7 @@
       await FitnessDB.addExercise(cardio);
       UI.showToast('Cardio added!');
       elements.cardioForm.reset();
+      elements.bikeTypeGroup.style.display = 'none';
       elements.cardioDuration.value = '30';
       elements.cardioDistance.value = '0';
       await loadAllData();

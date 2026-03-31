@@ -159,7 +159,16 @@ const UI = {
       other: 'Other'
     };
 
-    const name = activityNames[cardio.name] || cardio.name;
+    const bikeTypeNames = {
+      road: 'Road Bike',
+      mt: 'Mountain Bike',
+      gravel: 'Gravel Bike'
+    };
+
+    let name = activityNames[cardio.name] || cardio.name;
+    if (cardio.name === 'biking' && cardio.subtype) {
+      name += ' · ' + (bikeTypeNames[cardio.subtype] || cardio.subtype);
+    }
     let details = `${cardio.duration} min`;
     if (cardio.distance > 0) {
       details += ` · ${cardio.distance} mi`;
