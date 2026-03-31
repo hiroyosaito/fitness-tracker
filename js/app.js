@@ -65,6 +65,15 @@
     const signoutBtn = document.getElementById('signout-btn');
     const loginError = document.getElementById('login-error');
 
+    // Sign out (always set up, regardless of session state)
+    signoutBtn.addEventListener('click', () => {
+      FitnessDB.signOut();
+      appDiv.style.display = 'none';
+      loginScreen.style.display = 'flex';
+      document.getElementById('auth-email').value = '';
+      document.getElementById('auth-password').value = '';
+    });
+
     // Restore existing session
     const session = FitnessDB.restoreSession();
     if (session) {
@@ -118,15 +127,6 @@
         loginError.textContent = err.message;
         loginError.style.display = 'block';
       }
-    });
-
-    // Sign out
-    signoutBtn.addEventListener('click', () => {
-      FitnessDB.signOut();
-      appDiv.style.display = 'none';
-      loginScreen.style.display = 'flex';
-      document.getElementById('auth-email').value = '';
-      document.getElementById('auth-password').value = '';
     });
 
     return false;
