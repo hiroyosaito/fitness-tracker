@@ -56,6 +56,82 @@
   let suggestions = [];
   let cachedUserExerciseNames = [];
 
+  // Handle login screen
+  function setupAuth() {
+    const loginScreen = document.getElementById('login-screen');
+    const appDiv = document.getElementById('app');
+    const loginForm = document.getElementById('login-form');
+    const signupBtn = document.getElementById('signup-btn');
+    const signoutBtn = document.getElementById('signout-btn');
+    const loginError = document.getElementById('login-error');
+
+    // Restore existing session
+    const session = FitnessDB.restoreSession();
+    if (session) {
+      loginScreen.style.display = 'none';
+      appDiv.style.display = 'block';
+      return true;
+    }
+
+    // Sign in
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('auth-email').value;
+      const password = document.getElementById('auth-password').value;
+      loginError.style.display = 'none';
+      try {
+        await FitnessDB.signIn(email, password);
+        loginScreen.style.display = 'none';
+        appDiv.style.display = 'block';
+        init();
+      } catch (err) {
+        loginError.textContent = err.message;
+        loginError.style.display = 'block';
+      }
+    });
+
+    // Sign up
+    signupBtn.addEventListener('click', async () => {
+      const email = document.getElementById('auth-email').value;
+      const password = document.getElementById('auth-password').value;
+      if (!email || !password) {
+        loginError.textContent = 'Please enter email and password';
+        loginError.style.display = 'block';
+        return;
+      }
+      loginError.style.display = 'none';
+      try {
+        await FitnessDB.signUp(email, password);
+        loginError.style.display = 'none';
+        // If session was created immediately, proceed
+        if (FitnessDB.getCurrentUserId()) {
+          loginScreen.style.display = 'none';
+          appDiv.style.display = 'block';
+          init();
+        } else {
+          loginError.style.color = 'var(--success)';
+          loginError.textContent = 'Account created! Please check your email to confirm, then sign in.';
+          loginError.style.display = 'block';
+        }
+      } catch (err) {
+        loginError.style.color = 'var(--accent)';
+        loginError.textContent = err.message;
+        loginError.style.display = 'block';
+      }
+    });
+
+    // Sign out
+    signoutBtn.addEventListener('click', () => {
+      FitnessDB.signOut();
+      appDiv.style.display = 'none';
+      loginScreen.style.display = 'flex';
+      document.getElementById('auth-email').value = '';
+      document.getElementById('auth-password').value = '';
+    });
+
+    return false;
+  }
+
   // Initialize the app
   async function init() {
     // Cache DOM elements
@@ -789,8 +865,12 @@
 
   // Initialize when DOM is ready
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
+    document.addEventListener('DOMContentLoaded', () => {
+      const loggedIn = setupAuth();
+      if (loggedIn) init();
+    });
   } else {
-    init();
+    const loggedIn = setupAuth();
+    if (loggedIn) init();
   }
 })();
