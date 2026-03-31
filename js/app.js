@@ -41,6 +41,7 @@
     weekCore: null,
     weekCardioMins: null,
     weekClassCount: null,
+    weekBikeMiles: null,
     progressExercise: null,
     progressChart: null,
     reportPeriod: null,
@@ -166,6 +167,7 @@
     elements.weekCore = UI.$('week-core');
     elements.weekCardioMins = UI.$('week-cardio-mins');
     elements.weekClassCount = UI.$('week-class-count');
+    elements.weekBikeMiles = UI.$('week-bike-miles');
     elements.progressExercise = UI.$('progress-exercise');
     elements.progressChart = UI.$('progress-chart');
     elements.reportPeriod = UI.$('report-period');
@@ -693,6 +695,9 @@
       const weekCardio = weekExercises.filter(e => e.type === 'cardio');
       const weekClasses = weekExercises.filter(e => e.type === 'class');
       const weekCardioMins = weekCardio.reduce((sum, e) => sum + (e.duration || 0), 0);
+      const weekBikeMiles = weekCardio
+        .filter(e => e.name === 'biking')
+        .reduce((sum, e) => sum + (e.distance || 0), 0);
 
       // Count exercises by body part
       const upperBodyMuscles = ['chest', 'shoulders', 'biceps', 'triceps', 'forearms', 'traps'];
@@ -740,6 +745,7 @@
       elements.weekCore.textContent = coreCount;
       elements.weekCardioMins.textContent = weekCardioMins;
       elements.weekClassCount.textContent = weekClasses.length;
+      elements.weekBikeMiles.textContent = weekBikeMiles % 1 === 0 ? weekBikeMiles : weekBikeMiles.toFixed(1);
 
       // Populate exercise dropdown with unique strength exercises
       const strengthExercises = allExercises.filter(e => e.type === 'strength');
