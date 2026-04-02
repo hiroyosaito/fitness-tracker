@@ -44,6 +44,25 @@ function signOut() {
   localStorage.removeItem('fitness_session');
 }
 
+// Refresh the access token using the refresh token
+async function refreshSession() {
+  if (!currentSession || !currentSession.refresh_token) return false;
+  try {
+    const response = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: currentSession.refresh_token })
+    });
+    if (!response.ok) return false;
+    const data = await response.json();
+    currentSession = data;
+    localStorage.setItem('fitness_session', JSON.stringify(data));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // Restore session from localStorage on page load
 function restoreSession() {
   const saved = localStorage.getItem('fitness_session');
@@ -59,7 +78,7 @@ function getCurrentUserId() {
 }
 
 // Helper function for Supabase API calls
-async function supabaseRequest(endpoint, options = {}) {
+async function supabaseRequest(endpoint, options = {}, isRetry = false) {
   const url = `${SUPABASE_URL}/rest/v1/${endpoint}`;
   const headers = {
     'apikey': SUPABASE_ANON_KEY,
@@ -72,6 +91,17 @@ async function supabaseRequest(endpoint, options = {}) {
     ...options,
     headers: { ...headers, ...options.headers }
   });
+
+  if (response.status === 401 && !isRetry) {
+    const refreshed = await refreshSession();
+    if (refreshed) {
+      return supabaseRequest(endpoint, options, true);
+    } else {
+      signOut();
+      window.location.reload();
+      return;
+    }
+  }
 
   if (!response.ok) {
     const error = await response.text();
