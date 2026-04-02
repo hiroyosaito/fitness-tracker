@@ -238,7 +238,7 @@
           const lastExercise = await FitnessDB.getLastExerciseByName(name);
           if (lastExercise) {
             elements.weightInput.value = lastExercise.weight || 0;
-            elements.repsInput.value = lastExercise.reps || 10;
+            elements.repsInput.value = lastExercise.reps || ExerciseDB.EXERCISES.find(e => e.name === name)?.defaultReps || 10;
             elements.setsInput.value = lastExercise.sets || 1;
             if (lastExercise.notes) {
               elements.notesInput.value = lastExercise.notes;
@@ -512,10 +512,11 @@
     // Fetch last exercise data and auto-fill
     try {
       const lastExercise = await FitnessDB.getLastExerciseByName(name);
+      const exerciseDefaults = ExerciseDB.EXERCISES.find(e => e.name === name);
       if (lastExercise) {
         // Auto-fill weight, reps, sets
         elements.weightInput.value = lastExercise.weight || 0;
-        elements.repsInput.value = lastExercise.reps || 10;
+        elements.repsInput.value = lastExercise.reps || exerciseDefaults?.defaultReps || 10;
         elements.setsInput.value = lastExercise.sets || 1;
 
         // Auto-fill notes
@@ -535,6 +536,8 @@
           });
           elements.imagePreview.classList.add('has-image');
         }
+      } else if (exerciseDefaults?.defaultReps) {
+        elements.repsInput.value = exerciseDefaults.defaultReps;
       }
     } catch (error) {
       console.error('Failed to fetch last exercise:', error);

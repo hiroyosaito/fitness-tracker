@@ -39,6 +39,7 @@ const EXERCISES = [
   { name: 'T-Bar Row', muscles: ['back', 'biceps'] },
   { name: 'Deadlift', muscles: ['back', 'hamstrings', 'glutes', 'core'] },
   { name: 'Back Extension', muscles: ['back', 'glutes'] },
+  { name: 'Prone Press Up', muscles: ['back'], defaultReps: 5 },
 
   // Shoulder exercises
   { name: 'Overhead Press', muscles: ['shoulders', 'triceps'] },
@@ -91,6 +92,8 @@ const EXERCISES = [
   { name: 'Hip Abduction Machine', muscles: ['glutes'] },
   { name: 'Hip Adduction Machine', muscles: ['quads'] },
   { name: 'Good Morning', muscles: ['hamstrings', 'back', 'glutes'] },
+  { name: 'Side Lying Leg Raise', muscles: ['glutes'] },
+  { name: 'Single Leg Deadlift', muscles: ['hamstrings', 'glutes', 'back'] },
 
   // Leg exercises - Calves
   { name: 'Calf Raise', muscles: ['calves'] },
@@ -109,6 +112,7 @@ const EXERCISES = [
   { name: 'Ab Wheel Rollout', muscles: ['core'] },
   { name: 'Mountain Climbers', muscles: ['core', 'shoulders'] },
   { name: 'Dead Bug', muscles: ['core'] },
+  { name: 'Bird Dog', muscles: ['core'] },
 
   // Compound/Full Body
   { name: 'Clean and Press', muscles: ['shoulders', 'back', 'quads', 'core'] },
