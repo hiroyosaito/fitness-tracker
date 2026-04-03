@@ -595,7 +595,7 @@
       await FitnessDB.addExercise(exercise);
       UI.showToast('Exercise added!');
       resetForm();
-      await loadExercises();
+      await loadAllData();
       await loadUserExerciseNames(); // Refresh cache
     } catch (error) {
       console.error('Failed to add exercise:', error);
@@ -617,42 +617,17 @@
     elements.exerciseNameInput.focus();
   }
 
-  // Load all activities for current date
-  async function loadExercises() {
+  // Load all data for current date (single fetch, then split by type)
+  async function loadAllData() {
     try {
       const allEntries = await FitnessDB.getExercisesByDate(currentDate);
       UI.renderAllActivities(allEntries, elements.allActivitiesList, handleDeleteExercise, 'all-empty-state');
+      UI.renderCardioList(allEntries.filter(e => e.type === 'cardio'), elements.cardioList, handleDeleteExercise, 'cardio-empty-state');
+      UI.renderClassList(allEntries.filter(e => e.type === 'class'), elements.classList, handleDeleteExercise, 'class-empty-state');
     } catch (error) {
-      console.error('Failed to load activities:', error);
+      console.error('Failed to load data:', error);
       UI.showToast('Failed to load activities', 'error');
     }
-  }
-
-  // Load cardio for current date
-  async function loadCardio() {
-    try {
-      const allEntries = await FitnessDB.getExercisesByDate(currentDate);
-      const cardio = allEntries.filter(e => e.type === 'cardio');
-      UI.renderCardioList(cardio, elements.cardioList, handleDeleteExercise, 'cardio-empty-state');
-    } catch (error) {
-      console.error('Failed to load cardio:', error);
-    }
-  }
-
-  // Load classes for current date
-  async function loadClasses() {
-    try {
-      const allEntries = await FitnessDB.getExercisesByDate(currentDate);
-      const classes = allEntries.filter(e => e.type === 'class');
-      UI.renderClassList(classes, elements.classList, handleDeleteExercise, 'class-empty-state');
-    } catch (error) {
-      console.error('Failed to load classes:', error);
-    }
-  }
-
-  // Load all data for current date
-  async function loadAllData() {
-    await Promise.all([loadExercises(), loadCardio(), loadClasses()]);
   }
 
   // Check what's actually in Supabase
@@ -699,7 +674,7 @@
     try {
       const todayEntries = await FitnessDB.getExercisesByDate(currentDate);
       if (todayEntries.length === 0) {
-        html += `<p class="db-check-error">getExercisesByDate returned 0 results for ${currentDate}</p>`;
+        html += `<p style="color:var(--text-secondary); font-size:0.85rem;">No exercises logged for ${currentDate} yet.</p>`;
       } else {
         html += `<p class="db-check-total">getExercisesByDate: ${todayEntries.length} exercise${todayEntries.length !== 1 ? 's' : ''} found for ${currentDate}</p>`;
       }
@@ -825,6 +800,7 @@
 
     } catch (error) {
       console.error('Failed to load reports:', error);
+      UI.showToast('Failed to load reports: ' + error.message, 'error');
     }
   }
 
@@ -903,7 +879,7 @@
     try {
       await FitnessDB.updateExercise(id, { sets: currentSets + 1 });
       UI.showToast('+1 Set');
-      await loadExercises();
+      await loadAllData();
     } catch (error) {
       console.error('Failed to add set:', error);
       UI.showToast('Failed to add set', 'error');
