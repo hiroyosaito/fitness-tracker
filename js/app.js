@@ -663,13 +663,15 @@
     btn.textContent = 'Checking...';
     resultDiv.style.display = 'none';
 
+    let html = '';
+
+    // Test 1: getAllExercises
     try {
       const all = await FitnessDB.getAllExercises();
 
       if (all.length === 0) {
-        resultDiv.innerHTML = '<p class="db-check-empty">No exercises found in Supabase for your account.</p>';
+        html += '<p class="db-check-empty">No exercises found in Supabase for your account.</p>';
       } else {
-        // Group by date
         const byDate = all.reduce((acc, ex) => {
           acc[ex.date] = (acc[ex.date] || 0) + 1;
           return acc;
@@ -681,7 +683,7 @@
           return `<tr><td>${date}</td><td>${count} exercise${count !== 1 ? 's' : ''}</td></tr>`;
         }).join('');
 
-        resultDiv.innerHTML = `
+        html += `
           <p class="db-check-total">${all.length} total exercise${all.length !== 1 ? 's' : ''} across ${sortedDates.length} day${sortedDates.length !== 1 ? 's' : ''}</p>
           <table class="db-check-table">
             <thead><tr><th>Date</th><th>Count</th></tr></thead>
@@ -689,9 +691,23 @@
           </table>`;
       }
     } catch (err) {
-      resultDiv.innerHTML = `<p class="db-check-error">Error: ${err.message}</p>`;
+      html += `<p class="db-check-error">getAllExercises error: ${err.message}</p>`;
     }
 
+    // Test 2: getExercisesByDate for today
+    html += `<p style="margin-top:12px; color:var(--text-secondary); font-size:0.8rem;">Date query test (currentDate = "${currentDate}"):</p>`;
+    try {
+      const todayEntries = await FitnessDB.getExercisesByDate(currentDate);
+      if (todayEntries.length === 0) {
+        html += `<p class="db-check-error">getExercisesByDate returned 0 results for ${currentDate}</p>`;
+      } else {
+        html += `<p class="db-check-total">getExercisesByDate: ${todayEntries.length} exercise${todayEntries.length !== 1 ? 's' : ''} found for ${currentDate}</p>`;
+      }
+    } catch (err) {
+      html += `<p class="db-check-error">getExercisesByDate error: ${err.message}</p>`;
+    }
+
+    resultDiv.innerHTML = html;
     resultDiv.style.display = 'block';
     btn.disabled = false;
     btn.textContent = 'Check Database';
