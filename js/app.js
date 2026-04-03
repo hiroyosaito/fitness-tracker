@@ -305,6 +305,9 @@
         }
       });
     });
+
+    // Database check button
+    UI.$('check-db-btn').addEventListener('click', checkDatabase);
   }
 
   // Handle cardio form submission
@@ -650,6 +653,48 @@
   // Load all data for current date
   async function loadAllData() {
     await Promise.all([loadExercises(), loadCardio(), loadClasses()]);
+  }
+
+  // Check what's actually in Supabase
+  async function checkDatabase() {
+    const btn = UI.$('check-db-btn');
+    const resultDiv = UI.$('db-check-result');
+    btn.disabled = true;
+    btn.textContent = 'Checking...';
+    resultDiv.style.display = 'none';
+
+    try {
+      const all = await FitnessDB.getAllExercises();
+
+      if (all.length === 0) {
+        resultDiv.innerHTML = '<p class="db-check-empty">No exercises found in Supabase for your account.</p>';
+      } else {
+        // Group by date
+        const byDate = all.reduce((acc, ex) => {
+          acc[ex.date] = (acc[ex.date] || 0) + 1;
+          return acc;
+        }, {});
+        const sortedDates = Object.keys(byDate).sort().reverse();
+
+        let rows = sortedDates.map(date => {
+          const count = byDate[date];
+          return `<tr><td>${date}</td><td>${count} exercise${count !== 1 ? 's' : ''}</td></tr>`;
+        }).join('');
+
+        resultDiv.innerHTML = `
+          <p class="db-check-total">${all.length} total exercise${all.length !== 1 ? 's' : ''} across ${sortedDates.length} day${sortedDates.length !== 1 ? 's' : ''}</p>
+          <table class="db-check-table">
+            <thead><tr><th>Date</th><th>Count</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>`;
+      }
+    } catch (err) {
+      resultDiv.innerHTML = `<p class="db-check-error">Error: ${err.message}</p>`;
+    }
+
+    resultDiv.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Check Database';
   }
 
   // Load reports

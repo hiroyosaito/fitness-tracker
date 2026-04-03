@@ -610,6 +610,47 @@ body {
   color: var(--accent);
 }
 
+/* Database Check */
+.db-check-total {
+  color: var(--success);
+  font-size: 0.9rem;
+  margin-bottom: 10px;
+}
+
+.db-check-empty {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.db-check-error {
+  color: var(--accent);
+  font-size: 0.9rem;
+  word-break: break-word;
+}
+
+.db-check-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.db-check-table th {
+  text-align: left;
+  color: var(--text-secondary);
+  padding: 4px 8px 4px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.db-check-table td {
+  padding: 5px 8px 5px 0;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+}
+
+.db-check-table tr:last-child td {
+  border-bottom: none;
+}
+
 /* Progress Chart */
 .progress-chart {
   min-height: 200px;

@@ -169,13 +169,15 @@ function blobToBase64(blob) {
 
 // Get all exercises for a specific date
 async function getExercisesByDate(date) {
-  const result = await supabaseRequest(`exercises?date=eq.${date}&order=timestamp.desc`);
+  const userId = getCurrentUserId();
+  const result = await supabaseRequest(`exercises?date=eq.${date}&user_id=eq.${userId}&order=timestamp.desc`);
   return result.map(transformExercise);
 }
 
 // Get all exercises
 async function getAllExercises() {
-  const result = await supabaseRequest('exercises?order=timestamp.desc');
+  const userId = getCurrentUserId();
+  const result = await supabaseRequest(`exercises?user_id=eq.${userId}&order=timestamp.desc`);
   return result.map(transformExercise);
 }
 
@@ -241,8 +243,9 @@ async function getExercisesGroupedByDate() {
 
 // Get the most recent entry for a specific exercise name
 async function getLastExerciseByName(name) {
+  const userId = getCurrentUserId();
   const result = await supabaseRequest(
-    `exercises?name=eq.${encodeURIComponent(name)}&order=timestamp.desc&limit=1`
+    `exercises?name=eq.${encodeURIComponent(name)}&user_id=eq.${userId}&order=timestamp.desc&limit=1`
   );
 
   if (result.length === 0) return null;
