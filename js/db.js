@@ -169,9 +169,8 @@ function blobToBase64(blob) {
 
 // Get all exercises for a specific date
 async function getExercisesByDate(date) {
-  const userId = getCurrentUserId();
-  const result = await supabaseRequest(`exercises?user_id=eq.${userId}&date=eq.${date}&order=timestamp.desc`);
-  return result.map(transformExercise);
+  const all = await getAllExercises();
+  return all.filter(ex => ex.date === date);
 }
 
 // Get all exercises
