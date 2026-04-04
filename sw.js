@@ -1,18 +1,10 @@
-const CACHE_NAME = 'fitness-tracker-v23';
+const CACHE_NAME = 'fitness-tracker-v24';
 const ASSETS_TO_CACHE = [
-  '/',
-  '/index.html',
-  '/css/styles.css',
-  '/js/app.js',
-  '/js/db.js',
-  '/js/exercises.js',
-  '/js/ui.js',
-  '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png'
 ];
 
-// Install event - cache assets
+// Install event - cache only icons (not JS/CSS which must stay fresh)
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -34,40 +26,29 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch event - cache-first for static assets, network-first for API
+// Fetch event - only cache icons, everything else goes to network
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Don't intercept Supabase API calls - let browser handle them directly
+  // Don't intercept Supabase API calls
   if (url.hostname.includes('supabase.co')) {
     return;
   }
 
-  // Cache-first strategy for static assets only
+  // Cache-first only for icons
+  if (url.pathname.startsWith('/icons/')) {
+    event.respondWith(
+      caches.match(event.request).then((cachedResponse) => {
+        return cachedResponse || fetch(event.request);
+      })
+    );
+    return;
+  }
+
+  // Everything else (JS, CSS, HTML) - network only, fallback to cache if offline
   event.respondWith(
-    caches.match(event.request)
-      .then((cachedResponse) => {
-        if (cachedResponse) {
-          return cachedResponse;
-        }
-        return fetch(event.request).then((response) => {
-          // Don't cache non-successful responses or non-GET requests
-          if (!response || response.status !== 200 || event.request.method !== 'GET') {
-            return response;
-          }
-          // Clone and cache the response
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
-          return response;
-        });
-      })
-      .catch(() => {
-        // Fallback for offline - return cached index for navigation
-        if (event.request.mode === 'navigate') {
-          return caches.match('/index.html');
-        }
-      })
+    fetch(event.request).catch(() => {
+      return caches.match(event.request) || caches.match('/index.html');
+    })
   );
 });
