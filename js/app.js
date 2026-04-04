@@ -85,13 +85,18 @@
       e.preventDefault();
       const email = document.getElementById('auth-email').value;
       const password = document.getElementById('auth-password').value;
+      const signinBtn = document.getElementById('signin-btn');
       loginError.style.display = 'none';
+      signinBtn.disabled = true;
+      signinBtn.textContent = 'Signing in...';
       try {
         await FitnessDB.signIn(email, password);
         window.location.reload();
       } catch (err) {
         loginError.textContent = err.message;
         loginError.style.display = 'block';
+        signinBtn.disabled = false;
+        signinBtn.textContent = 'Sign In';
       }
     });
 
