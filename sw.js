@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fitness-tracker-v22';
+const CACHE_NAME = 'fitness-tracker-v23';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -38,9 +38,8 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Don't cache Supabase API calls - always fetch fresh data
+  // Don't intercept Supabase API calls - let browser handle them directly
   if (url.hostname.includes('supabase.co')) {
-    event.respondWith(fetch(event.request));
     return;
   }
 
