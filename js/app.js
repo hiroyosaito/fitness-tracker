@@ -631,7 +631,7 @@
       UI.renderClassList(allEntries.filter(e => e.type === 'class'), elements.classList, handleDeleteExercise, 'class-empty-state');
     } catch (error) {
       console.error('Failed to load data:', error);
-      UI.showToast('Failed to load activities', 'error');
+      UI.showToast('Load error: ' + error.message, 'error');
     }
   }
 
