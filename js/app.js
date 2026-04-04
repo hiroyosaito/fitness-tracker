@@ -624,8 +624,10 @@
 
   // Load all data for current date (single fetch, then split by type)
   async function loadAllData() {
+    const fetchingFor = currentDate;
     try {
-      const allEntries = await FitnessDB.getExercisesByDate(currentDate);
+      const allEntries = await FitnessDB.getExercisesByDate(fetchingFor);
+      if (fetchingFor !== currentDate) return; // date changed while fetching, discard stale result
       UI.renderAllActivities(allEntries, elements.allActivitiesList, handleDeleteExercise, 'all-empty-state');
       UI.renderCardioList(allEntries.filter(e => e.type === 'cardio'), elements.cardioList, handleDeleteExercise, 'cardio-empty-state');
       UI.renderClassList(allEntries.filter(e => e.type === 'class'), elements.classList, handleDeleteExercise, 'class-empty-state');
