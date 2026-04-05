@@ -142,7 +142,7 @@ async function addExercise(exercise) {
   return result[0];
 }
 
-const EXERCISE_COLUMNS = 'id,date,type,name,weight,reps,sets,duration,distance,notes,muscles,subtype,timestamp';
+const EXERCISE_COLUMNS = 'id,date,type,name,weight,reps,sets,duration,distance,notes,muscles,timestamp';
 
 // Get all exercises for a specific date
 async function getExercisesByDate(date) {

@@ -305,7 +305,6 @@
       date: currentDate,
       type: 'cardio',
       name: type,
-      subtype: type === 'biking' ? elements.bikeType.value : null,
       duration,
       distance,
       notes: notes || null
