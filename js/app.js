@@ -320,12 +320,13 @@
       });
 
       const fmt = n => n % 1 === 0 ? n : n.toFixed(1);
+      const sectionLabel = t => `<div style="color:var(--text-secondary);font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;margin-top:12px;margin-bottom:2px">${t}</div>`;
       let html = `<span class="stat-number">${totalStr} mi</span><div class="stat-breakdown">`;
-      html += `<div class="stat-row"><span>By bike type</span></div>`;
+      html += sectionLabel('By bike type');
       Object.entries(byType).sort((a,b) => b[1]-a[1]).forEach(([k,v]) => {
         html += `<div class="stat-row"><span>${k}</span><span class="stat-row-value">${fmt(v)} mi</span></div>`;
       });
-      html += `<div class="stat-row" style="margin-top:8px"><span>By companion</span></div>`;
+      html += sectionLabel('By companion');
       Object.entries(byCompanion).sort((a,b) => b[1]-a[1]).forEach(([k,v]) => {
         html += `<div class="stat-row"><span>${k}</span><span class="stat-row-value">${fmt(v)} mi</span></div>`;
       });
