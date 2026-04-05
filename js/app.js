@@ -146,6 +146,9 @@
     elements.cardioType = UI.$('cardio-type');
     elements.bikeTypeGroup = UI.$('bike-type-group');
     elements.bikeType = UI.$('bike-type');
+    elements.bikeExtraGroup = UI.$('bike-extra-group');
+    elements.bikeDifficulty = UI.$('bike-difficulty');
+    elements.bikeCompanion = UI.$('bike-companion');
     elements.cardioDuration = UI.$('cardio-duration');
     elements.cardioDistance = UI.$('cardio-distance');
     elements.cardioNotes = UI.$('cardio-notes');
@@ -259,7 +262,9 @@
 
     // Show/hide bike type selector
     elements.cardioType.addEventListener('change', () => {
-      elements.bikeTypeGroup.style.display = elements.cardioType.value === 'biking' ? 'block' : 'none';
+      const isBiking = elements.cardioType.value === 'biking';
+      elements.bikeTypeGroup.style.display = isBiking ? 'block' : 'none';
+      elements.bikeExtraGroup.style.display = isBiking ? 'flex' : 'none';
     });
 
     // Cardio form submission
@@ -294,12 +299,24 @@
     const type = elements.cardioType.value;
     const duration = parseInt(elements.cardioDuration.value) || 0;
     const distance = parseFloat(elements.cardioDistance.value) || 0;
-    const notes = elements.cardioNotes.value.trim();
+    const userNotes = elements.cardioNotes.value.trim();
 
     if (!type) {
       UI.showToast('Please select an activity', 'error');
       return;
     }
+
+    let noteParts = [];
+    if (type === 'biking') {
+      const bikeType = elements.bikeType.value;
+      const difficulty = elements.bikeDifficulty.value;
+      const companion = elements.bikeCompanion.value;
+      const bikeTypeLabel = { road: 'Road', mt: 'Mountain', gravel: 'Gravel' }[bikeType] || bikeType;
+      const difficultyLabel = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
+      const companionLabel = companion === 'alone' ? 'Alone' : companion === 'other' ? 'Other' : `With ${companion}`;
+      noteParts.push(`${bikeTypeLabel} · ${difficultyLabel} · ${companionLabel}`);
+    }
+    if (userNotes) noteParts.push(userNotes);
 
     const cardio = {
       date: currentDate,
@@ -307,7 +324,7 @@
       name: type,
       duration,
       distance,
-      notes: notes || null
+      notes: noteParts.length > 0 ? noteParts.join(' · ') : null
     };
 
     try {
@@ -315,6 +332,7 @@
       UI.showToast('Cardio added!');
       elements.cardioForm.reset();
       elements.bikeTypeGroup.style.display = 'none';
+      elements.bikeExtraGroup.style.display = 'none';
       elements.cardioDuration.value = '30';
       elements.cardioDistance.value = '0';
       await loadAllData();
