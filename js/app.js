@@ -645,10 +645,6 @@
           startDate.setDate(today.getDate() - today.getDay()); // Start of week (Sunday)
           periodTitle = 'This Week';
           break;
-        case 'month':
-          startDate = new Date(today.getFullYear(), today.getMonth(), 1);
-          periodTitle = 'This Month';
-          break;
         case 'year':
           startDate = new Date(today.getFullYear(), 0, 1);
           periodTitle = 'This Year';
