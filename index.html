@@ -235,39 +235,32 @@
 
       <!-- Reports Section -->
       <section id="reports-section" class="section">
-        <!-- Time Period Selector -->
-        <div class="report-period-selector">
-          <select id="report-period">
-            <option value="week">This Week</option>
-            <option value="year">This Year</option>
-          </select>
+        <!-- Period toggle -->
+        <div class="period-toggle">
+          <button class="period-btn active" data-period="week">This Week</button>
+          <button class="period-btn" data-period="month">This Month</button>
         </div>
 
-        <!-- Summary -->
-        <div class="report-card">
-          <h2 id="report-period-title">This Week</h2>
-          <div class="summary-grid">
-            <div class="summary-row">
-              <span class="summary-label">Workout Days</span>
-              <span class="summary-value" id="week-workout-days">0</span>
-            </div>
-            <div class="summary-row">
-              <span class="summary-label">Strength Training</span>
-              <span class="summary-value" id="week-strength-count">0</span>
-            </div>
-            <div class="summary-row">
-              <span class="summary-label">Cardio Minutes</span>
-              <span class="summary-value" id="week-cardio-mins">0</span>
-            </div>
-            <div class="summary-row">
-              <span class="summary-label">Bike Miles</span>
-              <span class="summary-value" id="week-bike-miles">0</span>
-            </div>
-            <div class="summary-row">
-              <span class="summary-label">Classes</span>
-              <span class="summary-value" id="week-class-count">0</span>
-            </div>
-          </div>
+        <!-- On-demand stats -->
+        <div class="stat-card" id="stat-workout-days">
+          <button class="stat-btn">Workout Days</button>
+          <div class="stat-result" style="display:none"></div>
+        </div>
+        <div class="stat-card" id="stat-strength">
+          <button class="stat-btn">Strength Training</button>
+          <div class="stat-result" style="display:none"></div>
+        </div>
+        <div class="stat-card" id="stat-cardio">
+          <button class="stat-btn">Cardio Minutes</button>
+          <div class="stat-result" style="display:none"></div>
+        </div>
+        <div class="stat-card" id="stat-bike">
+          <button class="stat-btn">Bike Miles</button>
+          <div class="stat-result" style="display:none"></div>
+        </div>
+        <div class="stat-card" id="stat-classes">
+          <button class="stat-btn">Classes</button>
+          <div class="stat-result" style="display:none"></div>
         </div>
 
         <!-- Database Check -->

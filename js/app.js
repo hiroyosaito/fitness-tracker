@@ -31,15 +31,8 @@
     classNotes: null,
     classList: null,
     // Report elements
-    weekWorkoutDays: null,
-    weekStrengthCount: null,
-    weekCardioMins: null,
-    weekClassCount: null,
-    weekBikeMiles: null,
     progressExercise: null,
-    progressChart: null,
-    reportPeriod: null,
-    reportPeriodTitle: null
+    progressChart: null
   };
 
   // State
@@ -47,6 +40,8 @@
   let selectedSuggestionIndex = 0;
   let suggestions = [];
   let cachedUserExerciseNames = [];
+  let reportPeriod = 'week';
+  let exerciseDropdownLoaded = false;
 
   // Handle login screen
   function setupAuth() {
@@ -163,8 +158,6 @@
     elements.weekBikeMiles = UI.$('week-bike-miles');
     elements.progressExercise = UI.$('progress-exercise');
     elements.progressChart = UI.$('progress-chart');
-    elements.reportPeriod = UI.$('report-period');
-    elements.reportPeriodTitle = UI.$('report-period-title');
 
     // Initialize database
     try {
@@ -268,17 +261,82 @@
     // Progress exercise selection
     elements.progressExercise.addEventListener('change', handleProgressExerciseChange);
 
-    // Report period selection
-    elements.reportPeriod.addEventListener('change', loadReports);
-
-    // Load reports when switching to reports tab
-    elements.tabs.forEach(tab => {
-      tab.addEventListener('click', () => {
-        if (tab.dataset.tab === 'reports') {
-          loadReports();
-        }
+    // Populate exercise dropdown lazily when user opens it
+    elements.progressExercise.addEventListener('focus', () => {
+      if (exerciseDropdownLoaded) return;
+      exerciseDropdownLoaded = true;
+      const uniqueNames = [...new Set(cachedUserExerciseNames)].sort();
+      uniqueNames.forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        elements.progressExercise.appendChild(option);
       });
     });
+
+    // Period toggle buttons
+    document.querySelectorAll('.period-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        reportPeriod = btn.dataset.period;
+        // Collapse all open stats so user re-fetches with new period
+        document.querySelectorAll('.stat-result').forEach(r => r.style.display = 'none');
+        document.querySelectorAll('.stat-btn').forEach(b => b.classList.remove('open'));
+      });
+    });
+
+    // Stat buttons
+    UI.$('stat-workout-days').querySelector('.stat-btn').addEventListener('click', () => loadStat('stat-workout-days', async (d) => {
+      const count = await FitnessDB.statWorkoutDays(d);
+      return `<span class="stat-number">${count}</span><span style="color:var(--text-secondary);font-size:0.85rem">days with at least one activity</span>`;
+    }));
+
+    UI.$('stat-strength').querySelector('.stat-btn').addEventListener('click', () => loadStat('stat-strength', async (d) => {
+      const count = await FitnessDB.statStrengthDays(d);
+      return `<span class="stat-number">${count}</span><span style="color:var(--text-secondary);font-size:0.85rem">days with strength training</span>`;
+    }));
+
+    UI.$('stat-cardio').querySelector('.stat-btn').addEventListener('click', () => loadStat('stat-cardio', async (d) => {
+      const mins = await FitnessDB.statCardioMinutes(d);
+      const hrs = (mins / 60).toFixed(1);
+      return `<span class="stat-number">${mins}</span><span style="color:var(--text-secondary);font-size:0.85rem">minutes &nbsp;·&nbsp; ${hrs} hours</span>`;
+    }));
+
+    UI.$('stat-bike').querySelector('.stat-btn').addEventListener('click', () => loadStat('stat-bike', async (d) => {
+      const rides = await FitnessDB.statBikeRides(d);
+      const total = rides.reduce((sum, r) => sum + (r.distance || 0), 0);
+      const totalStr = total % 1 === 0 ? total : total.toFixed(1);
+
+      const byType = {}, byCompanion = {};
+      rides.forEach(r => {
+        const parts = (r.notes || '').split(' · ');
+        const bikeTypes = ['Road', 'Mountain', 'Gravel'];
+        const type = bikeTypes.includes(parts[0]) ? parts[0] : 'Other';
+        const companion = parts[2] || 'Unknown';
+        const mi = r.distance || 0;
+        byType[type] = (byType[type] || 0) + mi;
+        byCompanion[companion] = (byCompanion[companion] || 0) + mi;
+      });
+
+      const fmt = n => n % 1 === 0 ? n : n.toFixed(1);
+      let html = `<span class="stat-number">${totalStr} mi</span><div class="stat-breakdown">`;
+      html += `<div class="stat-row"><span>By bike type</span></div>`;
+      Object.entries(byType).sort((a,b) => b[1]-a[1]).forEach(([k,v]) => {
+        html += `<div class="stat-row"><span>${k}</span><span class="stat-row-value">${fmt(v)} mi</span></div>`;
+      });
+      html += `<div class="stat-row" style="margin-top:8px"><span>By companion</span></div>`;
+      Object.entries(byCompanion).sort((a,b) => b[1]-a[1]).forEach(([k,v]) => {
+        html += `<div class="stat-row"><span>${k}</span><span class="stat-row-value">${fmt(v)} mi</span></div>`;
+      });
+      html += `</div>`;
+      return html;
+    }));
+
+    UI.$('stat-classes').querySelector('.stat-btn').addEventListener('click', () => loadStat('stat-classes', async (d) => {
+      const count = await FitnessDB.statClasses(d);
+      return `<span class="stat-number">${count}</span><span style="color:var(--text-secondary);font-size:0.85rem">classes attended</span>`;
+    }));
 
     // Database check button
     UI.$('check-db-btn').addEventListener('click', checkDatabase);
@@ -619,73 +677,47 @@
     btn.textContent = 'Check Database';
   }
 
-  // Load reports
-  async function loadReports() {
-    try {
-      const period = elements.reportPeriod.value;
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      // Calculate start date based on selected period
-      let startDate = null;
-      let startDateStr = null;
-      let periodTitle = '';
-
-      switch (period) {
-        case 'week':
-          startDate = new Date(today);
-          startDate.setDate(today.getDate() - today.getDay()); // Start of week (Sunday)
-          periodTitle = 'This Week';
-          break;
-        case 'year':
-          startDate = new Date(today.getFullYear(), 0, 1);
-          periodTitle = 'This Year';
-          break;
-      }
-
-      if (startDate) {
-        startDateStr = startDate.toISOString().slice(0, 10);
-      }
-
-      // Update title
-      elements.reportPeriodTitle.textContent = periodTitle;
-
-      // Fetch only the columns needed for reports, filtered by date server-side
-      const allExercises = await FitnessDB.getExercisesForReports(startDateStr);
-      const weekExercises = allExercises;
-
-      // Weekly stats
-      const weekDates = [...new Set(weekExercises.map(e => e.date))];
-      const weekStrength = weekExercises.filter(e => e.type === 'strength');
-      const weekCardio = weekExercises.filter(e => e.type === 'cardio');
-      const weekClasses = weekExercises.filter(e => e.type === 'class');
-      const weekCardioMins = weekCardio.reduce((sum, e) => sum + (e.duration || 0), 0);
-      const weekBikeMiles = weekCardio
-        .filter(e => e.name === 'biking')
-        .reduce((sum, e) => sum + (e.distance || 0), 0);
-
-      elements.weekWorkoutDays.textContent = weekDates.length;
-      elements.weekStrengthCount.textContent = weekStrength.length;
-      elements.weekCardioMins.textContent = weekCardioMins;
-      elements.weekClassCount.textContent = weekClasses.length;
-      elements.weekBikeMiles.textContent = weekBikeMiles % 1 === 0 ? weekBikeMiles : weekBikeMiles.toFixed(1);
-
-      // Populate exercise dropdown with unique strength exercises
-      const strengthExercises = allExercises.filter(e => e.type === 'strength');
-      const uniqueNames = [...new Set(strengthExercises.map(e => e.name))].sort();
-
-      elements.progressExercise.innerHTML = '<option value="">Choose an exercise...</option>';
-      uniqueNames.forEach(name => {
-        const option = document.createElement('option');
-        option.value = name;
-        option.textContent = name;
-        elements.progressExercise.appendChild(option);
-      });
-
-    } catch (error) {
-      console.error('Failed to load reports:', error);
-      UI.showToast('Failed to load reports: ' + error.message, 'error');
+  // Get start date string for current report period
+  function getReportStartDate() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (reportPeriod === 'week') {
+      const start = new Date(today);
+      start.setDate(today.getDate() - today.getDay());
+      return start.toISOString().slice(0, 10);
+    } else {
+      const start = new Date(today.getFullYear(), today.getMonth(), 1);
+      return start.toISOString().slice(0, 10);
     }
+  }
+
+  // Load a single stat on demand — toggles open/closed
+  async function loadStat(cardId, fetchAndRender) {
+    const card = UI.$(cardId);
+    const btn = card.querySelector('.stat-btn');
+    const result = card.querySelector('.stat-result');
+
+    if (result.style.display === 'block') {
+      result.style.display = 'none';
+      btn.classList.remove('open');
+      return;
+    }
+
+    const label = btn.textContent;
+    btn.textContent = '...';
+    btn.disabled = true;
+
+    try {
+      result.innerHTML = await fetchAndRender(getReportStartDate());
+      result.style.display = 'block';
+      btn.classList.add('open');
+    } catch (err) {
+      result.innerHTML = `<p style="color:var(--accent);font-size:0.85rem">${err.message}</p>`;
+      result.style.display = 'block';
+    }
+
+    btn.textContent = label;
+    btn.disabled = false;
   }
 
   // Handle progress exercise selection

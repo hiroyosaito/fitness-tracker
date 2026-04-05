@@ -246,6 +246,37 @@ async function getExerciseDateCounts() {
   return result;
 }
 
+// Stat queries — each fetches only the columns it needs
+
+async function statWorkoutDays(startDate) {
+  const userId = getCurrentUserId();
+  const result = await supabaseRequest(`exercises?user_id=eq.${userId}&date=gte.${startDate}&select=date`);
+  return [...new Set(result.map(r => r.date))].length;
+}
+
+async function statStrengthDays(startDate) {
+  const userId = getCurrentUserId();
+  const result = await supabaseRequest(`exercises?user_id=eq.${userId}&type=eq.strength&date=gte.${startDate}&select=date`);
+  return [...new Set(result.map(r => r.date))].length;
+}
+
+async function statCardioMinutes(startDate) {
+  const userId = getCurrentUserId();
+  const result = await supabaseRequest(`exercises?user_id=eq.${userId}&type=eq.cardio&date=gte.${startDate}&select=duration`);
+  return result.reduce((sum, r) => sum + (r.duration || 0), 0);
+}
+
+async function statBikeRides(startDate) {
+  const userId = getCurrentUserId();
+  return await supabaseRequest(`exercises?user_id=eq.${userId}&name=eq.biking&date=gte.${startDate}&select=distance,notes`);
+}
+
+async function statClasses(startDate) {
+  const userId = getCurrentUserId();
+  const result = await supabaseRequest(`exercises?user_id=eq.${userId}&type=eq.class&date=gte.${startDate}&select=name`);
+  return result.length;
+}
+
 // Get the most recent entry for a specific exercise name
 async function getLastExerciseByName(name) {
   const userId = getCurrentUserId();
@@ -270,6 +301,11 @@ window.FitnessDB = {
   getExercisesForReports,
   getExerciseHistoryByName,
   getExerciseDateCounts,
+  statWorkoutDays,
+  statStrengthDays,
+  statCardioMinutes,
+  statBikeRides,
+  statClasses,
   getLastExerciseByName,
   signUp,
   signIn,
