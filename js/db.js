@@ -131,23 +131,8 @@ async function addExercise(exercise) {
     distance: exercise.distance || null,
     notes: exercise.notes || null,
     muscles: exercise.muscles ? JSON.stringify(exercise.muscles) : null,
-    image_url: null,
     timestamp: Date.now()
   };
-
-  // Handle multiple images
-  if (exercise.images && exercise.images.length > 0) {
-    const base64Images = [];
-    for (const img of exercise.images) {
-      if (img instanceof Blob) {
-        const base64 = await blobToBase64(img);
-        base64Images.push(base64);
-      } else if (typeof img === 'string') {
-        base64Images.push(img);
-      }
-    }
-    entry.image_url = JSON.stringify(base64Images);
-  }
 
   const result = await supabaseRequest('exercises', {
     method: 'POST',
@@ -157,20 +142,13 @@ async function addExercise(exercise) {
   return result[0];
 }
 
-// Convert Blob to base64
-function blobToBase64(blob) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-}
+const EXERCISE_COLUMNS = 'id,date,type,name,weight,reps,sets,duration,distance,notes,muscles,subtype,timestamp';
 
 // Get all exercises for a specific date
 async function getExercisesByDate(date) {
-  const all = await getAllExercises();
-  return all.filter(ex => ex.date === date);
+  const userId = getCurrentUserId();
+  const result = await supabaseRequest(`exercises?user_id=eq.${userId}&date=eq.${date}&select=${EXERCISE_COLUMNS}&order=timestamp.desc`);
+  return result.map(transformExercise);
 }
 
 // Get all exercises
@@ -182,16 +160,6 @@ async function getAllExercises() {
 
 // Transform exercise from DB format
 function transformExercise(exercise) {
-  let images = null;
-  if (exercise.image_url) {
-    try {
-      images = JSON.parse(exercise.image_url);
-    } catch {
-      // If not JSON, treat as single image
-      images = [exercise.image_url];
-    }
-  }
-
   let muscles = null;
   if (exercise.muscles) {
     try {
@@ -203,7 +171,6 @@ function transformExercise(exercise) {
 
   return {
     ...exercise,
-    images: images,
     muscles: muscles
   };
 }
@@ -240,6 +207,45 @@ async function getExercisesGroupedByDate() {
   return grouped;
 }
 
+// Get unique strength exercise names for autocomplete
+async function getExerciseNamesForAutocomplete() {
+  const userId = getCurrentUserId();
+  const result = await supabaseRequest(
+    `exercises?user_id=eq.${userId}&type=eq.strength&select=name&order=name.asc`
+  );
+  return [...new Set(result.map(r => r.name))];
+}
+
+// Get exercises for reports - excludes image data, supports optional date filter
+const REPORT_COLUMNS = 'id,date,type,name,weight,reps,sets,duration,distance,muscles,timestamp';
+async function getExercisesForReports(startDate = null) {
+  const userId = getCurrentUserId();
+  let query = `exercises?user_id=eq.${userId}&select=${REPORT_COLUMNS}&order=timestamp.desc`;
+  if (startDate) {
+    query += `&date=gte.${startDate}`;
+  }
+  const result = await supabaseRequest(query);
+  return result.map(transformExercise);
+}
+
+// Get exercise history by name for progress chart
+async function getExerciseHistoryByName(name) {
+  const userId = getCurrentUserId();
+  const result = await supabaseRequest(
+    `exercises?user_id=eq.${userId}&name=eq.${encodeURIComponent(name)}&select=id,date,weight,reps,sets,type,name&order=date.asc`
+  );
+  return result.map(transformExercise);
+}
+
+// Get exercise date counts for database check (lightweight)
+async function getExerciseDateCounts() {
+  const userId = getCurrentUserId();
+  const result = await supabaseRequest(
+    `exercises?user_id=eq.${userId}&select=id,date&order=date.desc`
+  );
+  return result;
+}
+
 // Get the most recent entry for a specific exercise name
 async function getLastExerciseByName(name) {
   const userId = getCurrentUserId();
@@ -260,6 +266,10 @@ window.FitnessDB = {
   updateExercise,
   deleteExercise,
   getExercisesGroupedByDate,
+  getExerciseNamesForAutocomplete,
+  getExercisesForReports,
+  getExerciseHistoryByName,
+  getExerciseDateCounts,
   getLastExerciseByName,
   signUp,
   signIn,

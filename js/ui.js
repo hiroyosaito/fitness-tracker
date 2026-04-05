@@ -104,24 +104,7 @@ const UI = {
 
     const actionsDiv = this.createElement('div', { className: 'exercise-actions' }, [addSetBtn, deleteBtn]);
 
-    const children = [];
-
-    // Add images if present
-    if (exercise.images && exercise.images.length > 0) {
-      const imagesContainer = this.createElement('div', { className: 'exercise-images' });
-      exercise.images.forEach(imgSrc => {
-        const img = this.createElement('img', { className: 'exercise-image' });
-        if (imgSrc instanceof Blob) {
-          img.src = URL.createObjectURL(imgSrc);
-        } else if (typeof imgSrc === 'string') {
-          img.src = imgSrc;
-        }
-        imagesContainer.appendChild(img);
-      });
-      children.push(imagesContainer);
-    }
-
-    children.push(infoDiv, actionsDiv);
+    const children = [infoDiv, actionsDiv];
 
     return this.createElement('li', { className: 'exercise-item' }, children);
   },

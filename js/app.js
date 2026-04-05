@@ -16,8 +16,6 @@
     setsInput: null,
     allActivitiesList: null,
     tabs: null,
-    imageInput: null,
-    imagePreview: null,
     notesInput: null,
     // Cardio elements
     cardioForm: null,
@@ -47,9 +45,6 @@
     reportPeriod: null,
     reportPeriodTitle: null
   };
-
-  // Current selected images (array)
-  let selectedImageBlobs = [];
 
   // State
   let currentDate = UI.getTodayDate();
@@ -145,8 +140,6 @@
     elements.setsInput = UI.$('sets');
     elements.allActivitiesList = UI.$('all-activities-list');
     elements.tabs = document.querySelectorAll('.tab');
-    elements.imageInput = UI.$('exercise-image');
-    elements.imagePreview = UI.$('image-preview');
     elements.notesInput = UI.$('exercise-notes');
     // Cardio elements
     elements.cardioForm = UI.$('add-cardio-form');
@@ -194,22 +187,15 @@
     // Set initial date
     elements.datePicker.value = currentDate;
 
-    // Load today's data
-    await loadAllData();
-
-    // Cache user exercise names for autocomplete
-    await loadUserExerciseNames();
+    // Load today's data and autocomplete cache in parallel
+    await Promise.all([loadAllData(), loadUserExerciseNames()]);
   }
 
   // Load and cache user exercise names
   async function loadUserExerciseNames() {
     try {
-      const allExercises = await FitnessDB.getAllExercises();
-      cachedUserExerciseNames = [...new Set(
-        allExercises
-          .filter(ex => ex.type === 'strength')
-          .map(ex => ex.name)
-      )];
+      const exercises = await FitnessDB.getExerciseNamesForAutocomplete();
+      cachedUserExerciseNames = exercises;
     } catch (error) {
       console.error('Failed to load user exercise names:', error);
     }
@@ -248,17 +234,6 @@
             if (lastExercise.notes) {
               elements.notesInput.value = lastExercise.notes;
             }
-            if (lastExercise.images && lastExercise.images.length > 0 && selectedImageBlobs.length === 0) {
-              selectedImageBlobs = lastExercise.images;
-              elements.imagePreview.innerHTML = '';
-              lastExercise.images.forEach(img => {
-                const imgEl = document.createElement('img');
-                imgEl.src = typeof img === 'string' ? img : URL.createObjectURL(img);
-                imgEl.alt = 'Preview';
-                elements.imagePreview.appendChild(imgEl);
-              });
-              elements.imagePreview.classList.add('has-image');
-            }
           }
         } catch (error) {
           console.error('Failed to fetch last exercise:', error);
@@ -281,9 +256,6 @@
         elements.suggestionsContainer.classList.remove('active');
       }
     });
-
-    // Image input change
-    elements.imageInput.addEventListener('change', handleImageSelect);
 
     // Show/hide bike type selector
     elements.cardioType.addEventListener('change', () => {
@@ -384,48 +356,6 @@
       console.error('Failed to add class:', error);
       UI.showToast('Failed to add class', 'error');
     }
-  }
-
-  // Handle image selection (multiple)
-  function handleImageSelect(e) {
-    const files = Array.from(e.target.files);
-    if (!files.length) {
-      clearImagePreview();
-      return;
-    }
-
-    // Validate file types
-    const validFiles = files.filter(file => file.type.startsWith('image/'));
-    if (validFiles.length === 0) {
-      UI.showToast('Please select image files', 'error');
-      clearImagePreview();
-      return;
-    }
-
-    // Store the blobs
-    selectedImageBlobs = validFiles;
-
-    // Show previews
-    elements.imagePreview.innerHTML = '';
-    validFiles.forEach(file => {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const img = document.createElement('img');
-        img.src = event.target.result;
-        img.alt = 'Preview';
-        elements.imagePreview.appendChild(img);
-      };
-      reader.readAsDataURL(file);
-    });
-    elements.imagePreview.classList.add('has-image');
-  }
-
-  // Clear image preview
-  function clearImagePreview() {
-    selectedImageBlobs = [];
-    elements.imageInput.value = '';
-    elements.imagePreview.innerHTML = '';
-    elements.imagePreview.classList.remove('has-image');
   }
 
   // Handle exercise name input
@@ -531,19 +461,6 @@
         if (lastExercise.notes) {
           elements.notesInput.value = lastExercise.notes;
         }
-
-        // Auto-fill images
-        if (lastExercise.images && lastExercise.images.length > 0) {
-          selectedImageBlobs = lastExercise.images;
-          elements.imagePreview.innerHTML = '';
-          lastExercise.images.forEach(img => {
-            const imgEl = document.createElement('img');
-            imgEl.src = typeof img === 'string' ? img : URL.createObjectURL(img);
-            imgEl.alt = 'Preview';
-            elements.imagePreview.appendChild(imgEl);
-          });
-          elements.imagePreview.classList.add('has-image');
-        }
       } else if (exerciseDefaults?.defaultReps) {
         elements.repsInput.value = exerciseDefaults.defaultReps;
       }
@@ -592,8 +509,7 @@
       reps,
       sets,
       notes: notes || null,
-      muscles: selectedMuscles,
-      images: selectedImageBlobs.length > 0 ? selectedImageBlobs : null
+      muscles: selectedMuscles
     };
 
     try {
@@ -618,7 +534,6 @@
     elements.muscleGroupsContainer.innerHTML = '';
     elements.muscleSelector.style.display = 'none';
     elements.muscleSelector.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
-    clearImagePreview();
     elements.exerciseNameInput.focus();
   }
 
@@ -647,9 +562,9 @@
 
     let html = '';
 
-    // Test 1: getAllExercises
+    // Test 1: getExerciseDateCounts
     try {
-      const all = await FitnessDB.getAllExercises();
+      const all = await FitnessDB.getExerciseDateCounts();
 
       if (all.length === 0) {
         html += '<p class="db-check-empty">No exercises found in Supabase for your account.</p>';
@@ -698,13 +613,13 @@
   // Load reports
   async function loadReports() {
     try {
-      const allExercises = await FitnessDB.getAllExercises();
       const period = elements.reportPeriod.value;
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
       // Calculate start date based on selected period
       let startDate = null;
+      let startDateStr = null;
       let periodTitle = '';
 
       switch (period) {
@@ -721,19 +636,18 @@
           startDate = new Date(today.getFullYear(), 0, 1);
           periodTitle = 'This Year';
           break;
-        case 'all':
-          startDate = null; // No filter
-          periodTitle = 'All Time';
-          break;
+      }
+
+      if (startDate) {
+        startDateStr = startDate.toISOString().slice(0, 10);
       }
 
       // Update title
       elements.reportPeriodTitle.textContent = periodTitle;
 
-      // Filter exercises for selected period
-      const weekExercises = startDate
-        ? allExercises.filter(e => new Date(e.date + 'T00:00:00') >= startDate)
-        : allExercises;
+      // Fetch only the columns needed for reports, filtered by date server-side
+      const allExercises = await FitnessDB.getExercisesForReports(startDateStr);
+      const weekExercises = allExercises;
 
       // Weekly stats
       const weekDates = [...new Set(weekExercises.map(e => e.date))];
@@ -821,10 +735,7 @@
     }
 
     try {
-      const allExercises = await FitnessDB.getAllExercises();
-      const exerciseHistory = allExercises
-        .filter(ex => ex.type === 'strength' && ex.name === exerciseName)
-        .sort((a, b) => new Date(a.date) - new Date(b.date));
+      const exerciseHistory = await FitnessDB.getExerciseHistoryByName(exerciseName);
 
       if (exerciseHistory.length === 0) {
         elements.progressChart.innerHTML = '<p class="empty-state">No data for this exercise</p>';
