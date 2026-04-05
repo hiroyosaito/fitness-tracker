@@ -32,11 +32,7 @@
     classList: null,
     // Report elements
     weekWorkoutDays: null,
-    weekBalance: null,
-    weekUpperBody: null,
-    weekBack: null,
-    weekLowerBody: null,
-    weekCore: null,
+    weekStrengthCount: null,
     weekCardioMins: null,
     weekClassCount: null,
     weekBikeMiles: null,
@@ -161,11 +157,7 @@
     elements.classList = UI.$('class-list');
     // Report elements
     elements.weekWorkoutDays = UI.$('week-workout-days');
-    elements.weekBalance = UI.$('week-balance');
-    elements.weekUpperBody = UI.$('week-upper-body');
-    elements.weekBack = UI.$('week-back');
-    elements.weekLowerBody = UI.$('week-lower-body');
-    elements.weekCore = UI.$('week-core');
+    elements.weekStrengthCount = UI.$('week-strength-count');
     elements.weekCardioMins = UI.$('week-cardio-mins');
     elements.weekClassCount = UI.$('week-class-count');
     elements.weekBikeMiles = UI.$('week-bike-miles');
@@ -672,50 +664,8 @@
         .filter(e => e.name === 'biking')
         .reduce((sum, e) => sum + (e.distance || 0), 0);
 
-      // Count exercises by body part
-      const upperBodyMuscles = ['chest', 'shoulders', 'biceps', 'triceps', 'forearms', 'traps'];
-      const backMuscles = ['back'];
-      const lowerBodyMuscles = ['quads', 'hamstrings', 'glutes', 'calves'];
-      const coreMuscles = ['core'];
-
-      // Balance exercises (single-leg, stability work)
-      const balanceExercises = [
-        'lunges', 'lunge', 'bulgarian split squat', 'single leg', 'one leg',
-        'step up', 'pistol squat', 'balance', 'stability', 'bosu',
-        'single-leg', 'unilateral'
-      ];
-
-      let balanceCount = 0;
-      let upperBodyCount = 0;
-      let backCount = 0;
-      let lowerBodyCount = 0;
-      let coreCount = 0;
-
-      weekStrength.forEach(exercise => {
-        // Get muscles from predefined or saved custom
-        let muscles = ExerciseDB.getMuscleGroups(exercise.name);
-        let muscleKeys = muscles.map(m => m.key);
-        if (muscleKeys.length === 0 && exercise.muscles) {
-          muscleKeys = exercise.muscles;
-        }
-
-        const nameLower = exercise.name.toLowerCase();
-
-        // Check if it's a balance exercise
-        if (balanceExercises.some(b => nameLower.includes(b))) balanceCount++;
-
-        if (muscleKeys.some(m => upperBodyMuscles.includes(m))) upperBodyCount++;
-        if (muscleKeys.some(m => backMuscles.includes(m))) backCount++;
-        if (muscleKeys.some(m => lowerBodyMuscles.includes(m))) lowerBodyCount++;
-        if (muscleKeys.some(m => coreMuscles.includes(m))) coreCount++;
-      });
-
       elements.weekWorkoutDays.textContent = weekDates.length;
-      elements.weekBalance.textContent = balanceCount;
-      elements.weekUpperBody.textContent = upperBodyCount;
-      elements.weekBack.textContent = backCount;
-      elements.weekLowerBody.textContent = lowerBodyCount;
-      elements.weekCore.textContent = coreCount;
+      elements.weekStrengthCount.textContent = weekStrength.length;
       elements.weekCardioMins.textContent = weekCardioMins;
       elements.weekClassCount.textContent = weekClasses.length;
       elements.weekBikeMiles.textContent = weekBikeMiles % 1 === 0 ? weekBikeMiles : weekBikeMiles.toFixed(1);
