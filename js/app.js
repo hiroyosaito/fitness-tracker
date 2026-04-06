@@ -175,7 +175,8 @@
 
     // Set up event listeners
     setupEventListeners();
-    initCompanionDropdown();
+    localStorage.removeItem('bikeCompanions'); // migrated to DB-derived
+    await initCompanionDropdown();
 
     // Set initial date
     elements.datePicker.value = currentDate;
@@ -366,26 +367,15 @@
     UI.$('check-db-btn').addEventListener('click', checkDatabase);
   }
 
-  // Companion name helpers (localStorage)
-  function getCompanionNames() {
-    try { return JSON.parse(localStorage.getItem('bikeCompanions') || '[]'); } catch { return []; }
-  }
-
-  function saveCompanionName(name, category) {
-    const names = getCompanionNames();
-    if (!names.find(n => n.name === name)) {
-      names.push({ name, category });
-      localStorage.setItem('bikeCompanions', JSON.stringify(names));
-    }
-  }
-
-  function initCompanionDropdown() {
-    const names = getCompanionNames();
+  // Populate companion dropdowns from DB entries (always in sync with deletions)
+  async function initCompanionDropdown() {
+    let names = [];
+    try { names = await FitnessDB.getCardioCompanionNames(); } catch { return; }
     [elements.bikeCompanion, elements.walkRunCompanion].forEach(select => {
       select.querySelectorAll('[data-saved]').forEach(o => o.remove());
       if (names.length === 0) return;
       const insertBefore = select.querySelector('[value="__new_friends"]');
-      names.forEach(({ name }) => {
+      names.forEach(name => {
         const opt = document.createElement('option');
         opt.value = name;
         opt.textContent = name;
@@ -423,13 +413,8 @@
       } else if (companionVal === 'group') {
         companionLabel = 'Group';
       } else if (companionVal === '__new_friends' || companionVal === '__new_family') {
-        if (companionText) {
-          saveCompanionName(companionText, companionVal === '__new_friends' ? 'friends' : 'family');
-          initCompanionDropdown();
-        }
         companionLabel = companionText ? `With ${companionText}` : (companionVal === '__new_friends' ? 'With Friend' : 'With Family');
       } else if (companionVal === 'other') {
-        if (companionText) { saveCompanionName(companionText, 'other'); initCompanionDropdown(); }
         companionLabel = companionText ? `With ${companionText}` : 'Other';
       } else {
         companionLabel = `With ${companionVal}`;
@@ -445,13 +430,8 @@
       } else if (companionVal === 'group') {
         companionLabel = 'Group';
       } else if (companionVal === '__new_friends' || companionVal === '__new_family') {
-        if (companionText) {
-          saveCompanionName(companionText, companionVal === '__new_friends' ? 'friends' : 'family');
-          initCompanionDropdown();
-        }
         companionLabel = companionText ? `With ${companionText}` : (companionVal === '__new_friends' ? 'With Friend' : 'With Family');
       } else if (companionVal === 'other') {
-        if (companionText) { saveCompanionName(companionText, 'other'); initCompanionDropdown(); }
         companionLabel = companionText ? `With ${companionText}` : 'Other';
       } else {
         companionLabel = `With ${companionVal}`;
@@ -480,7 +460,7 @@
       elements.walkRunCompanionInput.style.display = 'none';
       elements.cardioDuration.value = '30';
       elements.cardioDistance.value = '0';
-      await loadAllData();
+      await Promise.all([loadAllData(), initCompanionDropdown()]);
     } catch (error) {
       console.error('Failed to add cardio:', error);
       UI.showToast('Failed to add cardio', 'error');
@@ -864,7 +844,7 @@
     try {
       await FitnessDB.deleteExercise(id);
       UI.showToast('Deleted');
-      await loadAllData();
+      await Promise.all([loadAllData(), initCompanionDropdown()]);
     } catch (error) {
       console.error('Failed to delete:', error);
       UI.showToast('Failed to delete', 'error');

@@ -277,6 +277,24 @@ async function statClasses(startDate) {
   return result.length;
 }
 
+// Get unique companion names from biking/walking/running cardio entries
+async function getCardioCompanionNames() {
+  const userId = getCurrentUserId();
+  const result = await supabaseRequest(
+    `exercises?user_id=eq.${userId}&type=eq.cardio&name=in.(biking,walking,running)&select=name,notes`
+  );
+  const names = new Set();
+  result.forEach(r => {
+    if (!r.notes) return;
+    const parts = r.notes.split(' · ');
+    const companionLabel = r.name === 'biking' ? parts[2] : parts[0];
+    if (!companionLabel || !companionLabel.startsWith('With ')) return;
+    const name = companionLabel.slice(5).trim();
+    if (name && name !== 'Friend' && name !== 'Family') names.add(name);
+  });
+  return [...names].sort();
+}
+
 // Get the most recent entry for a specific exercise name
 async function getLastExerciseByName(name) {
   const userId = getCurrentUserId();
@@ -306,6 +324,7 @@ window.FitnessDB = {
   statCardioMinutes,
   statBikeRides,
   statClasses,
+  getCardioCompanionNames,
   getLastExerciseByName,
   signUp,
   signIn,
