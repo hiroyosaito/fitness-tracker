@@ -895,8 +895,7 @@
   // Initialize when DOM is ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-      const loggedIn = setupAuth();
-      if (loggedIn) init();
+      setupAuth().then(loggedIn => { if (loggedIn) init(); });
     });
   } else {
     setupAuth().then(loggedIn => { if (loggedIn) init(); });
