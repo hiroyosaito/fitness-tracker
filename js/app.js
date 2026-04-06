@@ -746,27 +746,16 @@
         }
       });
 
-      const dataPoints = Object.values(byDate).slice(-10); // Last 10 sessions
-      const maxWeight = Math.max(...dataPoints.map(d => d.weight));
+      const dataPoints = Object.values(byDate).sort((a, b) => a.date.localeCompare(b.date));
 
-      // Render chart
-      let chartHTML = '<div class="chart-container"><div class="chart-bars">';
-
+      // Render as simple list
+      let listHTML = '<div class="progress-list">';
       dataPoints.forEach(point => {
-        const height = maxWeight > 0 ? (point.weight / maxWeight) * 140 : 4;
-        const dateLabel = new Date(point.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-
-        chartHTML += `
-          <div class="chart-bar-wrapper">
-            <span class="chart-bar-value">${point.weight}</span>
-            <div class="chart-bar" style="height: ${height}px"></div>
-            <span class="chart-bar-label">${dateLabel}</span>
-          </div>
-        `;
+        const dateLabel = new Date(point.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        listHTML += `<div class="progress-list-row"><span class="progress-list-date">${dateLabel}</span><span class="progress-list-weight">${point.weight} lbs</span></div>`;
       });
-
-      chartHTML += '</div></div>';
-      elements.progressChart.innerHTML = chartHTML;
+      listHTML += '</div>';
+      elements.progressChart.innerHTML = listHTML;
 
     } catch (error) {
       console.error('Failed to load exercise progress:', error);
