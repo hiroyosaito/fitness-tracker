@@ -44,7 +44,7 @@
   let exerciseDropdownLoaded = false;
 
   // Handle login screen
-  function setupAuth() {
+  async function setupAuth() {
     const loginScreen = document.getElementById('login-screen');
     const appDiv = document.getElementById('app');
     const loginForm = document.getElementById('login-form');
@@ -57,6 +57,14 @@
       FitnessDB.signOut();
       window.location.reload();
     });
+
+    // Handle OAuth redirect-back (Google)
+    const oauthHandled = await FitnessDB.handleOAuthCallback();
+    if (oauthHandled) {
+      loginScreen.style.display = 'none';
+      appDiv.style.display = 'block';
+      return true;
+    }
 
     // Restore existing session
     const session = FitnessDB.restoreSession();
@@ -112,6 +120,11 @@
         loginError.textContent = err.message;
         loginError.style.display = 'block';
       }
+    });
+
+    // Google sign in
+    document.getElementById('google-btn').addEventListener('click', () => {
+      FitnessDB.signInWithGoogle();
     });
 
     return false;
@@ -886,7 +899,6 @@
       if (loggedIn) init();
     });
   } else {
-    const loggedIn = setupAuth();
-    if (loggedIn) init();
+    setupAuth().then(loggedIn => { if (loggedIn) init(); });
   }
 })();

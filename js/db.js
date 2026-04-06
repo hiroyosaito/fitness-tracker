@@ -38,6 +38,41 @@ async function signIn(email, password) {
   return data;
 }
 
+// Sign in with Google (OAuth redirect)
+function signInWithGoogle() {
+  const redirectTo = window.location.origin + window.location.pathname;
+  window.location.href = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectTo)}`;
+}
+
+// Handle OAuth callback — call on page load to detect redirect-back from Google
+async function handleOAuthCallback() {
+  const hash = window.location.hash.substring(1);
+  if (!hash) return false;
+  const params = new URLSearchParams(hash);
+  const accessToken = params.get('access_token');
+  if (!accessToken) return false;
+
+  try {
+    const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${accessToken}` }
+    });
+    if (!response.ok) return false;
+    const user = await response.json();
+    currentSession = {
+      access_token: accessToken,
+      refresh_token: params.get('refresh_token'),
+      expires_in: parseInt(params.get('expires_in') || '3600'),
+      token_type: 'bearer',
+      user
+    };
+    localStorage.setItem('fitness_session', JSON.stringify(currentSession));
+    history.replaceState(null, '', window.location.pathname);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // Sign out
 function signOut() {
   currentSession = null;
@@ -329,6 +364,8 @@ window.FitnessDB = {
   signUp,
   signIn,
   signOut,
+  signInWithGoogle,
+  handleOAuthCallback,
   restoreSession,
   getCurrentUserId
 };
