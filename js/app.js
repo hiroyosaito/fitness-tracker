@@ -141,6 +141,9 @@
     elements.bikeDifficulty = UI.$('bike-difficulty');
     elements.bikeCompanion = UI.$('bike-companion');
     elements.bikeCompanionInput = UI.$('bike-companion-name');
+    elements.walkRunCompanionGroup = UI.$('walk-run-companion-group');
+    elements.walkRunCompanion = UI.$('walk-run-companion');
+    elements.walkRunCompanionInput = UI.$('walk-run-companion-name');
     elements.cardioDuration = UI.$('cardio-duration');
     elements.cardioDistance = UI.$('cardio-distance');
     elements.cardioNotes = UI.$('cardio-notes');
@@ -247,19 +250,29 @@
       }
     });
 
-    // Show/hide bike type selector
+    // Show/hide bike type selector and walk/run companion
     elements.cardioType.addEventListener('change', () => {
-      const isBiking = elements.cardioType.value === 'biking';
+      const type = elements.cardioType.value;
+      const isBiking = type === 'biking';
+      const isWalkRun = type === 'walking' || type === 'running';
       elements.bikeTypeGroup.style.display = isBiking ? 'block' : 'none';
       elements.bikeExtraGroup.style.display = isBiking ? 'flex' : 'none';
+      elements.walkRunCompanionGroup.style.display = isWalkRun ? 'block' : 'none';
+      if (!isWalkRun) { elements.walkRunCompanionInput.style.display = 'none'; }
     });
 
-    // Show/hide companion name input
+    // Show/hide companion name inputs
     elements.bikeCompanion.addEventListener('change', () => {
       const val = elements.bikeCompanion.value;
       const needsName = ['__new_friends', '__new_family', 'other'].includes(val);
       elements.bikeCompanionInput.style.display = needsName ? 'block' : 'none';
       if (needsName) { elements.bikeCompanionInput.value = ''; elements.bikeCompanionInput.focus(); }
+    });
+    elements.walkRunCompanion.addEventListener('change', () => {
+      const val = elements.walkRunCompanion.value;
+      const needsName = ['__new_friends', '__new_family', 'other'].includes(val);
+      elements.walkRunCompanionInput.style.display = needsName ? 'block' : 'none';
+      if (needsName) { elements.walkRunCompanionInput.value = ''; elements.walkRunCompanionInput.focus(); }
     });
 
     // Cardio form submission
@@ -367,17 +380,18 @@
   }
 
   function initCompanionDropdown() {
-    const select = elements.bikeCompanion;
-    select.querySelectorAll('[data-saved]').forEach(o => o.remove());
     const names = getCompanionNames();
-    if (names.length === 0) return;
-    const insertBefore = select.querySelector('[value="__new_friends"]');
-    names.forEach(({ name }) => {
-      const opt = document.createElement('option');
-      opt.value = name;
-      opt.textContent = name;
-      opt.dataset.saved = '1';
-      select.insertBefore(opt, insertBefore);
+    [elements.bikeCompanion, elements.walkRunCompanion].forEach(select => {
+      select.querySelectorAll('[data-saved]').forEach(o => o.remove());
+      if (names.length === 0) return;
+      const insertBefore = select.querySelector('[value="__new_friends"]');
+      names.forEach(({ name }) => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        opt.dataset.saved = '1';
+        select.insertBefore(opt, insertBefore);
+      });
     });
   }
 
@@ -422,6 +436,28 @@
       }
       noteParts.push(`${bikeTypeLabel} · ${difficultyLabel} · ${companionLabel}`);
     }
+    if (type === 'walking' || type === 'running') {
+      const companionVal = elements.walkRunCompanion.value;
+      const companionText = elements.walkRunCompanionInput.value.trim();
+      let companionLabel;
+      if (companionVal === 'alone') {
+        companionLabel = 'Alone';
+      } else if (companionVal === 'group') {
+        companionLabel = 'Group';
+      } else if (companionVal === '__new_friends' || companionVal === '__new_family') {
+        if (companionText) {
+          saveCompanionName(companionText, companionVal === '__new_friends' ? 'friends' : 'family');
+          initCompanionDropdown();
+        }
+        companionLabel = companionText ? `With ${companionText}` : (companionVal === '__new_friends' ? 'With Friend' : 'With Family');
+      } else if (companionVal === 'other') {
+        if (companionText) { saveCompanionName(companionText, 'other'); initCompanionDropdown(); }
+        companionLabel = companionText ? `With ${companionText}` : 'Other';
+      } else {
+        companionLabel = `With ${companionVal}`;
+      }
+      noteParts.push(companionLabel);
+    }
     if (userNotes) noteParts.push(userNotes);
 
     const cardio = {
@@ -440,6 +476,8 @@
       elements.bikeTypeGroup.style.display = 'none';
       elements.bikeExtraGroup.style.display = 'none';
       elements.bikeCompanionInput.style.display = 'none';
+      elements.walkRunCompanionGroup.style.display = 'none';
+      elements.walkRunCompanionInput.style.display = 'none';
       elements.cardioDuration.value = '30';
       elements.cardioDistance.value = '0';
       await loadAllData();
