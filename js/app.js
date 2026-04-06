@@ -140,6 +140,7 @@
     elements.bikeExtraGroup = UI.$('bike-extra-group');
     elements.bikeDifficulty = UI.$('bike-difficulty');
     elements.bikeCompanion = UI.$('bike-companion');
+    elements.bikeCompanionInput = UI.$('bike-companion-name');
     elements.cardioDuration = UI.$('cardio-duration');
     elements.cardioDistance = UI.$('cardio-distance');
     elements.cardioNotes = UI.$('cardio-notes');
@@ -171,6 +172,7 @@
 
     // Set up event listeners
     setupEventListeners();
+    initCompanionDropdown();
 
     // Set initial date
     elements.datePicker.value = currentDate;
@@ -250,6 +252,14 @@
       const isBiking = elements.cardioType.value === 'biking';
       elements.bikeTypeGroup.style.display = isBiking ? 'block' : 'none';
       elements.bikeExtraGroup.style.display = isBiking ? 'flex' : 'none';
+    });
+
+    // Show/hide companion name input
+    elements.bikeCompanion.addEventListener('change', () => {
+      const val = elements.bikeCompanion.value;
+      const needsName = ['__new_friends', '__new_family', 'other'].includes(val);
+      elements.bikeCompanionInput.style.display = needsName ? 'block' : 'none';
+      if (needsName) { elements.bikeCompanionInput.value = ''; elements.bikeCompanionInput.focus(); }
     });
 
     // Cardio form submission
@@ -343,6 +353,34 @@
     UI.$('check-db-btn').addEventListener('click', checkDatabase);
   }
 
+  // Companion name helpers (localStorage)
+  function getCompanionNames() {
+    try { return JSON.parse(localStorage.getItem('bikeCompanions') || '[]'); } catch { return []; }
+  }
+
+  function saveCompanionName(name, category) {
+    const names = getCompanionNames();
+    if (!names.find(n => n.name === name)) {
+      names.push({ name, category });
+      localStorage.setItem('bikeCompanions', JSON.stringify(names));
+    }
+  }
+
+  function initCompanionDropdown() {
+    const select = elements.bikeCompanion;
+    select.querySelectorAll('[data-saved]').forEach(o => o.remove());
+    const names = getCompanionNames();
+    if (names.length === 0) return;
+    const insertBefore = select.querySelector('[value="__new_friends"]');
+    names.forEach(({ name }) => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      opt.dataset.saved = '1';
+      select.insertBefore(opt, insertBefore);
+    });
+  }
+
   // Handle cardio form submission
   async function handleCardioSubmit(e) {
     e.preventDefault();
@@ -361,10 +399,27 @@
     if (type === 'biking') {
       const bikeType = elements.bikeType.value;
       const difficulty = elements.bikeDifficulty.value;
-      const companion = elements.bikeCompanion.value;
+      const companionVal = elements.bikeCompanion.value;
+      const companionText = elements.bikeCompanionInput.value.trim();
       const bikeTypeLabel = { road: 'Road', mt: 'Mountain', gravel: 'Gravel' }[bikeType] || bikeType;
       const difficultyLabel = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
-      const companionLabel = companion === 'alone' ? 'Alone' : companion === 'other' ? 'Other' : `With ${companion}`;
+      let companionLabel;
+      if (companionVal === 'alone') {
+        companionLabel = 'Alone';
+      } else if (companionVal === 'group') {
+        companionLabel = 'Group';
+      } else if (companionVal === '__new_friends' || companionVal === '__new_family') {
+        if (companionText) {
+          saveCompanionName(companionText, companionVal === '__new_friends' ? 'friends' : 'family');
+          initCompanionDropdown();
+        }
+        companionLabel = companionText ? `With ${companionText}` : (companionVal === '__new_friends' ? 'With Friend' : 'With Family');
+      } else if (companionVal === 'other') {
+        if (companionText) { saveCompanionName(companionText, 'other'); initCompanionDropdown(); }
+        companionLabel = companionText ? `With ${companionText}` : 'Other';
+      } else {
+        companionLabel = `With ${companionVal}`;
+      }
       noteParts.push(`${bikeTypeLabel} · ${difficultyLabel} · ${companionLabel}`);
     }
     if (userNotes) noteParts.push(userNotes);
@@ -384,6 +439,7 @@
       elements.cardioForm.reset();
       elements.bikeTypeGroup.style.display = 'none';
       elements.bikeExtraGroup.style.display = 'none';
+      elements.bikeCompanionInput.style.display = 'none';
       elements.cardioDuration.value = '30';
       elements.cardioDistance.value = '0';
       await loadAllData();
