@@ -305,6 +305,27 @@
           <div class="stat-result" style="display:none"></div>
         </div>
 
+        <!-- Strength Progress Chart -->
+        <div class="report-card">
+          <h2>Strength Progress</h2>
+          <div class="form-group">
+            <label for="progress-exercise">Select Exercise</label>
+            <select id="progress-exercise">
+              <option value="">Choose an exercise...</option>
+            </select>
+          </div>
+          <div id="progress-chart" class="progress-chart">
+            <p class="empty-state">Select an exercise to see your progress</p>
+          </div>
+        </div>
+
+        <!-- Data Export -->
+        <div class="report-card">
+          <h2>Export Data</h2>
+          <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 12px;">Download all your workout data as a CSV file, compatible with Excel and Google Sheets.</p>
+          <button id="export-btn" class="btn-secondary" style="width: 100%;">Download CSV</button>
+        </div>
+
         <!-- Change Password -->
         <div class="report-card">
           <h2>Change Password</h2>
@@ -320,33 +341,12 @@
           <button id="change-pw-btn" class="btn-secondary" style="width:100%;">Update Password</button>
         </div>
 
-        <!-- Data Export -->
-        <div class="report-card">
-          <h2>Export Data</h2>
-          <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 12px;">Download all your workout data as a CSV file, compatible with Excel and Google Sheets.</p>
-          <button id="export-btn" class="btn-secondary" style="width: 100%;">Download CSV</button>
-        </div>
-
         <!-- Database Check -->
         <div class="report-card">
           <h2>Database Check</h2>
           <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 12px;">Verify what's actually saved in Supabase.</p>
           <button id="check-db-btn" class="btn-secondary" style="width: 100%;">Check Database</button>
           <div id="db-check-result" style="display: none; margin-top: 12px;"></div>
-        </div>
-
-        <!-- Strength Progress Chart -->
-        <div class="report-card">
-          <h2>Strength Progress</h2>
-          <div class="form-group">
-            <label for="progress-exercise">Select Exercise</label>
-            <select id="progress-exercise">
-              <option value="">Choose an exercise...</option>
-            </select>
-          </div>
-          <div id="progress-chart" class="progress-chart">
-            <p class="empty-state">Select an exercise to see your progress</p>
-          </div>
         </div>
       </section>
     </main>
