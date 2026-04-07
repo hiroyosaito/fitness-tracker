@@ -414,15 +414,18 @@
       }
     });
 
-    // Show/hide bike type selector and walk/run companion
+    // Show/hide bike type selector, walk/run companion, and other name input
     elements.cardioType.addEventListener('change', () => {
       const type = elements.cardioType.value;
       const isBiking = type === 'biking';
       const isWalkRun = type === 'walking' || type === 'running';
+      const isOther = type === 'other';
       elements.bikeTypeGroup.style.display = isBiking ? 'block' : 'none';
       elements.bikeExtraGroup.style.display = isBiking ? 'flex' : 'none';
       elements.walkRunCompanionGroup.style.display = isWalkRun ? 'block' : 'none';
       if (!isWalkRun) { elements.walkRunCompanionInput.style.display = 'none'; }
+      UI.$('cardio-other-group').style.display = isOther ? 'block' : 'none';
+      if (isOther) UI.$('cardio-other-name').focus();
     });
 
     // Show/hide companion name inputs
@@ -593,9 +596,14 @@
     const duration = parseInt(elements.cardioDuration.value) || 0;
     const distance = parseFloat(elements.cardioDistance.value) || 0;
     const userNotes = elements.cardioNotes.value.trim();
+    const otherName = UI.$('cardio-other-name').value.trim();
 
     if (!type) {
       UI.showToast('Please select an activity', 'error');
+      return;
+    }
+    if (type === 'other' && !otherName) {
+      UI.showToast('Please enter an activity name', 'error');
       return;
     }
 
@@ -625,7 +633,7 @@
     const cardio = {
       date: currentDate,
       type: 'cardio',
-      name: type,
+      name: type === 'other' ? otherName : type,
       duration,
       distance,
       notes: userNotes || null,
@@ -644,6 +652,7 @@
       elements.bikeCompanionInput.style.display = 'none';
       elements.walkRunCompanionGroup.style.display = 'none';
       elements.walkRunCompanionInput.style.display = 'none';
+      UI.$('cardio-other-group').style.display = 'none';
       elements.cardioDuration.value = '30';
       elements.cardioDistance.value = '0';
       await Promise.all([loadAllData(), initCompanionDropdown()]);
