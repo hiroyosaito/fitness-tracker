@@ -840,6 +840,22 @@ body {
   font-size: 0.9rem;
 }
 
+.login-privacy {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: var(--spacing-md);
+}
+
+.login-privacy a {
+  color: var(--text-secondary);
+  text-decoration: underline;
+}
+
+.login-privacy a:hover {
+  color: var(--text-primary);
+}
+
 .login-error {
   background-color: rgba(233, 69, 96, 0.15);
   color: var(--accent);
