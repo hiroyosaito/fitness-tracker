@@ -166,11 +166,24 @@ const UI = {
       this.createElement('div', { className: 'exercise-details', textContent: details })
     ];
 
-    if (cardio.notes) {
-      infoChildren.push(this.createElement('div', {
-        className: 'exercise-notes',
-        textContent: cardio.notes
-      }));
+    if (cardio.bike_type || cardio.companion) {
+      // New format: dedicated columns
+      if (cardio.name === 'biking' && cardio.bike_type) {
+        const bikeTypeLabels = { road: 'Road', mt: 'Mountain', gravel: 'Gravel' };
+        const bikeLabel = bikeTypeLabels[cardio.bike_type] || cardio.bike_type;
+        const diffLabel = cardio.difficulty ? cardio.difficulty.charAt(0).toUpperCase() + cardio.difficulty.slice(1) : '';
+        const metaParts = [bikeLabel, diffLabel].filter(Boolean);
+        infoChildren.push(this.createElement('div', { className: 'exercise-notes', textContent: metaParts.join(' · ') }));
+      }
+      if (cardio.companion && cardio.companion !== 'Alone') {
+        infoChildren.push(this.createElement('div', { className: 'exercise-notes', textContent: cardio.companion }));
+      }
+      if (cardio.notes) {
+        infoChildren.push(this.createElement('div', { className: 'exercise-notes', textContent: cardio.notes }));
+      }
+    } else if (cardio.notes) {
+      // Legacy format: notes contains encoded metadata
+      infoChildren.push(this.createElement('div', { className: 'exercise-notes', textContent: cardio.notes }));
     }
 
     const infoDiv = this.createElement('div', { className: 'exercise-info' }, infoChildren);

@@ -334,6 +334,41 @@
           </div>
         </div>
 
+        <!-- Bike-specific fields -->
+        <div id="edit-bike-fields" style="display:none;">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="edit-bike-type">Bike Type</label>
+              <select id="edit-bike-type">
+                <option value="road">Road Bike</option>
+                <option value="mt">Mountain Bike</option>
+                <option value="gravel">Gravel Bike</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="edit-difficulty">Effort</label>
+              <select id="edit-difficulty">
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Companion (biking + walking + running) -->
+        <div id="edit-companion-group" style="display:none;">
+          <div class="form-group">
+            <label for="edit-companion">With</label>
+            <select id="edit-companion">
+              <option value="Alone">Alone</option>
+              <option value="Group">Group</option>
+              <option value="with">With... (enter name)</option>
+            </select>
+            <input type="text" id="edit-companion-name" placeholder="Enter name..." style="display:none; margin-top:8px;">
+          </div>
+        </div>
+
         <!-- Duration (cardio + class) -->
         <div id="edit-duration-group" style="display:none;">
           <div class="form-group">

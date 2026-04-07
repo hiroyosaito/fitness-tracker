@@ -166,6 +166,9 @@ async function addExercise(exercise) {
     distance: exercise.distance || null,
     notes: exercise.notes || null,
     muscles: exercise.muscles ? JSON.stringify(exercise.muscles) : null,
+    companion: exercise.companion || null,
+    bike_type: exercise.bike_type || null,
+    difficulty: exercise.difficulty || null,
     timestamp: Date.now()
   };
 
@@ -177,7 +180,7 @@ async function addExercise(exercise) {
   return result[0];
 }
 
-const EXERCISE_COLUMNS = 'id,date,type,name,weight,reps,sets,duration,distance,notes,muscles,timestamp';
+const EXERCISE_COLUMNS = 'id,date,type,name,weight,reps,sets,duration,distance,notes,muscles,companion,bike_type,difficulty,timestamp';
 
 // Get all exercises for a specific date
 async function getExercisesByDate(date) {
@@ -252,7 +255,7 @@ async function getExerciseNamesForAutocomplete() {
 }
 
 // Get exercises for reports - excludes image data, supports optional date filter
-const REPORT_COLUMNS = 'id,date,type,name,weight,reps,sets,duration,distance,muscles,timestamp';
+const REPORT_COLUMNS = 'id,date,type,name,weight,reps,sets,duration,distance,muscles,companion,bike_type,difficulty,timestamp';
 async function getExercisesForReports(startDate = null) {
   const userId = getCurrentUserId();
   let query = `exercises?user_id=eq.${userId}&select=${REPORT_COLUMNS}&order=timestamp.desc`;
@@ -303,7 +306,7 @@ async function statCardioMinutes(startDate) {
 
 async function statBikeRides(startDate) {
   const userId = getCurrentUserId();
-  return await supabaseRequest(`exercises?user_id=eq.${userId}&name=eq.biking&date=gte.${startDate}&select=distance,notes`);
+  return await supabaseRequest(`exercises?user_id=eq.${userId}&name=eq.biking&date=gte.${startDate}&select=distance,notes,companion,bike_type,difficulty`);
 }
 
 async function statClasses(startDate) {
@@ -316,18 +319,63 @@ async function statClasses(startDate) {
 async function getCardioCompanionNames() {
   const userId = getCurrentUserId();
   const result = await supabaseRequest(
-    `exercises?user_id=eq.${userId}&type=eq.cardio&name=in.(biking,walking,running)&select=name,notes`
+    `exercises?user_id=eq.${userId}&type=eq.cardio&name=in.(biking,walking,running)&select=name,companion,notes`
   );
   const names = new Set();
   result.forEach(r => {
+    // New format: companion column
+    if (r.companion) {
+      if (r.companion === 'Alone' || r.companion === 'Group') return;
+      const name = r.companion.startsWith('With ') ? r.companion.slice(5).trim() : r.companion.trim();
+      if (name && name !== 'someone') names.add(name);
+      return;
+    }
+    // Legacy format: parse from notes
     if (!r.notes) return;
     const parts = r.notes.split(' · ');
     const companionLabel = r.name === 'biking' ? parts[2] : parts[0];
     if (!companionLabel || !companionLabel.startsWith('With ')) return;
     const name = companionLabel.slice(5).trim();
-    if (name && name !== 'Friend' && name !== 'Family') names.add(name);
+    if (name && name !== 'Friend' && name !== 'Family' && name !== 'someone') names.add(name);
   });
   return [...names].sort();
+}
+
+// One-time migration: move encoded notes data into dedicated columns
+async function migrateCardioColumns() {
+  const userId = getCurrentUserId();
+  const result = await supabaseRequest(
+    `exercises?user_id=eq.${userId}&type=eq.cardio&companion=is.null&notes=not.is.null&select=id,name,notes`
+  );
+
+  const bikeTypeMap = { 'Road': 'road', 'Mountain': 'mt', 'Gravel': 'gravel' };
+
+  for (const entry of result) {
+    const parts = (entry.notes || '').split(' · ');
+    let patch = {};
+
+    if (entry.name === 'biking' && bikeTypeMap[parts[0]]) {
+      patch.bike_type = bikeTypeMap[parts[0]];
+      patch.difficulty = parts[1] ? parts[1].toLowerCase() : null;
+      patch.companion = parts[2] || null;
+      patch.notes = parts.slice(3).join(' · ') || null;
+    } else if (entry.name === 'walking' || entry.name === 'running') {
+      const first = parts[0];
+      if (first === 'Alone' || first === 'Group' || first.startsWith('With ')) {
+        patch.companion = first;
+        patch.notes = parts.slice(1).join(' · ') || null;
+      }
+    }
+
+    if (Object.keys(patch).length > 0) {
+      await supabaseRequest(`exercises?id=eq.${entry.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(patch)
+      });
+    }
+  }
+
+  return result.length;
 }
 
 // Get the most recent entry for a specific exercise name
@@ -360,6 +408,7 @@ window.FitnessDB = {
   statBikeRides,
   statClasses,
   getCardioCompanionNames,
+  migrateCardioColumns,
   getLastExerciseByName,
   signUp,
   signIn,

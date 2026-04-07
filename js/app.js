@@ -196,6 +196,9 @@
 
     // Load today's data and autocomplete cache in parallel
     await Promise.all([loadAllData(), loadUserExerciseNames()]);
+
+    // Silently migrate old encoded-notes entries to dedicated columns
+    FitnessDB.migrateCardioColumns().catch(e => console.warn('Cardio migration:', e));
   }
 
   // Load and cache user exercise names
@@ -344,14 +347,23 @@
       const totalStr = total % 1 === 0 ? total : total.toFixed(1);
 
       const byType = {}, byCompanion = {};
+      const bikeTypeLabels = { road: 'Road', mt: 'Mountain', gravel: 'Gravel' };
       rides.forEach(r => {
-        const parts = (r.notes || '').split(' · ');
-        const bikeTypes = ['Road', 'Mountain', 'Gravel'];
-        const type = bikeTypes.includes(parts[0]) ? parts[0] : 'Other';
-        const companion = parts[2] || 'Unknown';
+        let rideType, rideCompanion;
+        if (r.bike_type) {
+          // New format
+          rideType = bikeTypeLabels[r.bike_type] || 'Other';
+          rideCompanion = r.companion || 'Unknown';
+        } else {
+          // Legacy: parse from notes
+          const parts = (r.notes || '').split(' · ');
+          const validTypes = ['Road', 'Mountain', 'Gravel'];
+          rideType = validTypes.includes(parts[0]) ? parts[0] : 'Other';
+          rideCompanion = parts[2] || 'Unknown';
+        }
         const mi = r.distance || 0;
-        byType[type] = (byType[type] || 0) + mi;
-        byCompanion[companion] = (byCompanion[companion] || 0) + mi;
+        byType[rideType] = (byType[rideType] || 0) + mi;
+        byCompanion[rideCompanion] = (byCompanion[rideCompanion] || 0) + mi;
       });
 
       const fmt = n => n % 1 === 0 ? n : n.toFixed(1);
@@ -382,6 +394,11 @@
     UI.$('edit-form').addEventListener('submit', handleEditSave);
     UI.$('edit-modal').addEventListener('click', (e) => {
       if (e.target === UI.$('edit-modal')) closeEditModal();
+    });
+    UI.$('edit-companion').addEventListener('change', () => {
+      const needsName = UI.$('edit-companion').value === 'with';
+      UI.$('edit-companion-name').style.display = needsName ? 'block' : 'none';
+      if (needsName) { UI.$('edit-companion-name').value = ''; UI.$('edit-companion-name').focus(); }
     });
   }
 
@@ -417,42 +434,28 @@
       return;
     }
 
-    let noteParts = [];
+    let companion = null;
+    let bike_type = null;
+    let difficulty = null;
+
     if (type === 'biking') {
-      const bikeType = elements.bikeType.value;
-      const difficulty = elements.bikeDifficulty.value;
+      bike_type = elements.bikeType.value;
+      difficulty = elements.bikeDifficulty.value;
       const companionVal = elements.bikeCompanion.value;
       const companionText = elements.bikeCompanionInput.value.trim();
-      const bikeTypeLabel = { road: 'Road', mt: 'Mountain', gravel: 'Gravel' }[bikeType] || bikeType;
-      const difficultyLabel = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
-      let companionLabel;
-      if (companionVal === 'alone') {
-        companionLabel = 'Alone';
-      } else if (companionVal === 'group') {
-        companionLabel = 'Group';
-      } else if (companionVal === 'with') {
-        companionLabel = companionText ? `With ${companionText}` : 'With someone';
-      } else {
-        companionLabel = `With ${companionVal}`;
-      }
-      noteParts.push(`${bikeTypeLabel} · ${difficultyLabel} · ${companionLabel}`);
+      if (companionVal === 'alone') companion = 'Alone';
+      else if (companionVal === 'group') companion = 'Group';
+      else if (companionVal === 'with') companion = companionText ? `With ${companionText}` : 'With someone';
+      else companion = `With ${companionVal}`;
     }
     if (type === 'walking' || type === 'running') {
       const companionVal = elements.walkRunCompanion.value;
       const companionText = elements.walkRunCompanionInput.value.trim();
-      let companionLabel;
-      if (companionVal === 'alone') {
-        companionLabel = 'Alone';
-      } else if (companionVal === 'group') {
-        companionLabel = 'Group';
-      } else if (companionVal === 'with') {
-        companionLabel = companionText ? `With ${companionText}` : 'With someone';
-      } else {
-        companionLabel = `With ${companionVal}`;
-      }
-      noteParts.push(companionLabel);
+      if (companionVal === 'alone') companion = 'Alone';
+      else if (companionVal === 'group') companion = 'Group';
+      else if (companionVal === 'with') companion = companionText ? `With ${companionText}` : 'With someone';
+      else companion = `With ${companionVal}`;
     }
-    if (userNotes) noteParts.push(userNotes);
 
     const cardio = {
       date: currentDate,
@@ -460,7 +463,10 @@
       name: type,
       duration,
       distance,
-      notes: noteParts.length > 0 ? noteParts.join(' · ') : null
+      notes: userNotes || null,
+      companion,
+      bike_type,
+      difficulty
     };
 
     try {
@@ -863,10 +869,14 @@
     const isStrength = entry.type === 'strength';
     const isCardio = entry.type === 'cardio';
     const isClass = entry.type === 'class';
+    const isBiking = isCardio && entry.name === 'biking';
+    const isWalkRun = isCardio && (entry.name === 'walking' || entry.name === 'running');
 
     UI.$('edit-strength-fields').style.display = isStrength ? 'block' : 'none';
     UI.$('edit-duration-group').style.display = (isCardio || isClass) ? 'block' : 'none';
     UI.$('edit-distance-group').style.display = isCardio ? 'block' : 'none';
+    UI.$('edit-bike-fields').style.display = isBiking ? 'block' : 'none';
+    UI.$('edit-companion-group').style.display = (isBiking || isWalkRun) ? 'block' : 'none';
 
     const activityNames = { walking:'Walking', biking:'Biking', swimming:'Swimming', running:'Running', elliptical:'Elliptical', stairmaster:'Stairmaster', rowing:'Rowing', other:'Other' };
 
@@ -879,6 +889,28 @@
       UI.$('edit-modal-title').textContent = activityNames[entry.name] || entry.name;
       UI.$('edit-duration').value = entry.duration || 0;
       UI.$('edit-distance').value = entry.distance || 0;
+
+      if (isBiking) {
+        UI.$('edit-bike-type').value = entry.bike_type || 'road';
+        UI.$('edit-difficulty').value = entry.difficulty || 'medium';
+      }
+
+      if (isBiking || isWalkRun) {
+        const companion = entry.companion || 'Alone';
+        const companionSelect = UI.$('edit-companion');
+        const companionNameInput = UI.$('edit-companion-name');
+        if (companion === 'Alone' || companion === 'Group') {
+          companionSelect.value = companion;
+          companionNameInput.style.display = 'none';
+        } else if (companion.startsWith('With ')) {
+          companionSelect.value = 'with';
+          companionNameInput.value = companion.slice(5);
+          companionNameInput.style.display = 'block';
+        } else {
+          companionSelect.value = 'Alone';
+          companionNameInput.style.display = 'none';
+        }
+      }
     } else if (isClass) {
       UI.$('edit-modal-title').textContent = entry.name;
       UI.$('edit-duration').value = entry.duration || 0;
@@ -907,6 +939,20 @@
       updates.duration = parseInt(UI.$('edit-duration').value) || 0;
       if (type === 'cardio') {
         updates.distance = parseFloat(UI.$('edit-distance').value) || 0;
+        const name = editingEntry.name;
+        if (name === 'biking') {
+          updates.bike_type = UI.$('edit-bike-type').value;
+          updates.difficulty = UI.$('edit-difficulty').value;
+        }
+        if (name === 'biking' || name === 'walking' || name === 'running') {
+          const companionVal = UI.$('edit-companion').value;
+          const companionText = UI.$('edit-companion-name').value.trim();
+          if (companionVal === 'Alone' || companionVal === 'Group') {
+            updates.companion = companionVal;
+          } else if (companionVal === 'with') {
+            updates.companion = companionText ? `With ${companionText}` : 'With someone';
+          }
+        }
       }
     }
 
