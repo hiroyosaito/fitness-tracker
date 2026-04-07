@@ -244,19 +244,8 @@
         <form id="add-class-form" class="add-form">
           <div class="form-group">
             <label for="class-name">Class Name</label>
-            <select id="class-name" required>
-              <option value="">Select class...</option>
-              <option value="Yoga">Yoga</option>
-              <option value="Zumba">Zumba</option>
-              <option value="Aqua Zumba">Aqua Zumba</option>
-              <option value="Tai Chi">Tai Chi</option>
-              <option value="Line Dance">Line Dance</option>
-              <option value="Pilates">Pilates</option>
-              <option value="Spin">Spin</option>
-              <option value="HIIT">HIIT</option>
-              <option value="Aerobics">Aerobics</option>
-              <option value="Other">Other</option>
-            </select>
+            <input type="text" id="class-name" placeholder="Search or enter class name..." autocomplete="off" required>
+            <ul id="class-suggestions" class="suggestions"></ul>
           </div>
 
           <div class="form-group">

@@ -286,6 +286,15 @@ async function getExercisesGroupedByDate() {
   return grouped;
 }
 
+// Get unique class names the user has logged before
+async function getClassNamesForAutocomplete() {
+  const userId = getCurrentUserId();
+  const result = await supabaseRequest(
+    `exercises?user_id=eq.${userId}&type=eq.class&select=name&order=name.asc`
+  );
+  return [...new Set(result.map(r => r.name))];
+}
+
 // Get unique strength exercise names for autocomplete
 async function getExerciseNamesForAutocomplete() {
   const userId = getCurrentUserId();
@@ -439,6 +448,7 @@ window.FitnessDB = {
   updateExercise,
   deleteExercise,
   getExercisesGroupedByDate,
+  getClassNamesForAutocomplete,
   getExerciseNamesForAutocomplete,
   getExercisesForReports,
   getExerciseHistoryByName,

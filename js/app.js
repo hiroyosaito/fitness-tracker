@@ -35,11 +35,19 @@
     progressChart: null
   };
 
+  // Predefined class suggestions
+  const PREDEFINED_CLASSES = [
+    'Aerobics', 'Aqua Zumba', 'Boxing', 'CrossFit', 'Dance', 'HIIT',
+    'Kickboxing', 'Line Dance', 'Meditation', 'Pilates', 'Spin',
+    'Stretch', 'Tai Chi', 'Yoga', 'Zumba'
+  ];
+
   // State
   let currentDate = UI.getTodayDate();
   let selectedSuggestionIndex = 0;
   let suggestions = [];
   let cachedUserExerciseNames = [];
+  let cachedClassNames = [...PREDEFINED_CLASSES];
   let reportPeriod = 'week';
   let exerciseDropdownLoaded = false;
 
@@ -254,6 +262,7 @@
     elements.classDuration = UI.$('class-duration');
     elements.classNotes = UI.$('class-notes');
     elements.classList = UI.$('class-list');
+    elements.classSuggestions = UI.$('class-suggestions');
     // Report elements
     elements.weekWorkoutDays = UI.$('week-workout-days');
     elements.weekStrengthCount = UI.$('week-strength-count');
@@ -281,11 +290,21 @@
     // Set initial date
     elements.datePicker.value = currentDate;
 
-    // Load today's data and autocomplete cache in parallel
-    await Promise.all([loadAllData(), loadUserExerciseNames()]);
+    // Load today's data and autocomplete caches in parallel
+    await Promise.all([loadAllData(), loadUserExerciseNames(), loadClassNames()]);
 
     // Silently migrate old encoded-notes entries to dedicated columns
     FitnessDB.migrateCardioColumns().catch(e => console.warn('Cardio migration:', e));
+  }
+
+  // Load and cache class names (user's past + predefined)
+  async function loadClassNames() {
+    try {
+      const userClasses = await FitnessDB.getClassNamesForAutocomplete();
+      cachedClassNames = [...new Set([...userClasses, ...PREDEFINED_CLASSES])].sort();
+    } catch (e) {
+      cachedClassNames = [...PREDEFINED_CLASSES];
+    }
   }
 
   // Load and cache user exercise names
@@ -375,6 +394,18 @@
       const needsName = elements.walkRunCompanion.value === 'with';
       elements.walkRunCompanionInput.style.display = needsName ? 'block' : 'none';
       if (needsName) { elements.walkRunCompanionInput.value = ''; elements.walkRunCompanionInput.focus(); }
+    });
+
+    // Class name autocomplete
+    elements.className.addEventListener('focus', () => showClassSuggestions(elements.className.value));
+    elements.className.addEventListener('input', (e) => showClassSuggestions(e.target.value));
+    elements.className.addEventListener('blur', () => {
+      setTimeout(() => elements.classSuggestions.classList.remove('active'), 200);
+    });
+    document.addEventListener('click', (e) => {
+      if (!elements.className.contains(e.target) && !elements.classSuggestions.contains(e.target)) {
+        elements.classSuggestions.classList.remove('active');
+      }
     });
 
     // Cardio form submission
@@ -574,6 +605,35 @@
     }
   }
 
+  // Show class name suggestions
+  function showClassSuggestions(query) {
+    const q = query.trim().toLowerCase();
+    const matches = q
+      ? cachedClassNames.filter(n => n.toLowerCase().includes(q))
+      : cachedClassNames;
+
+    elements.classSuggestions.innerHTML = '';
+    if (matches.length === 0) {
+      elements.classSuggestions.classList.remove('active');
+      return;
+    }
+
+    matches.slice(0, 8).forEach((name, i) => {
+      const li = UI.createElement('li', {
+        textContent: name,
+        onClick: () => {
+          elements.className.value = name;
+          elements.classSuggestions.classList.remove('active');
+          elements.classDuration.focus();
+        }
+      });
+      if (i === 0) li.classList.add('selected');
+      elements.classSuggestions.appendChild(li);
+    });
+
+    elements.classSuggestions.classList.add('active');
+  }
+
   // Handle class form submission
   async function handleClassSubmit(e) {
     e.preventDefault();
@@ -600,7 +660,8 @@
       UI.showToast('Class added!');
       elements.classForm.reset();
       elements.classDuration.value = '60';
-      await loadAllData();
+      elements.classSuggestions.classList.remove('active');
+      await Promise.all([loadAllData(), loadClassNames()]);
     } catch (error) {
       console.error('Failed to add class:', error);
       UI.showToast('Failed to add class', 'error');
