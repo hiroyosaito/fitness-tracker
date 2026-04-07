@@ -131,20 +131,8 @@
             </div>
           </div>
 
-          <div class="form-row">
-            <div class="form-group">
-              <label for="weight">Weight (lbs)</label>
-              <input type="number" id="weight" placeholder="0" min="0" step="2.5" value="0">
-            </div>
-            <div class="form-group">
-              <label for="reps">Reps</label>
-              <input type="number" id="reps" placeholder="10" min="1" value="10">
-            </div>
-            <div class="form-group">
-              <label for="sets">Sets</label>
-              <input type="number" id="sets" placeholder="1" min="1" value="1" required>
-            </div>
-          </div>
+          <div id="sets-container"></div>
+          <button type="button" id="add-set-btn" class="btn-add-set">+ Add Set</button>
 
           <div class="form-group">
             <label for="exercise-notes">Notes (optional)</label>
@@ -389,20 +377,8 @@
               <label><input type="checkbox" value="calves"> Calves</label>
             </div>
           </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="edit-weight">Weight (lbs)</label>
-              <input type="number" id="edit-weight" min="0" step="2.5">
-            </div>
-            <div class="form-group">
-              <label for="edit-reps">Reps</label>
-              <input type="number" id="edit-reps" min="1">
-            </div>
-            <div class="form-group">
-              <label for="edit-sets">Sets</label>
-              <input type="number" id="edit-sets" min="1">
-            </div>
-          </div>
+          <div id="edit-sets-container"></div>
+          <button type="button" id="edit-add-set-btn" class="btn-add-set">+ Add Set</button>
         </div>
 
         <!-- Bike-specific fields -->

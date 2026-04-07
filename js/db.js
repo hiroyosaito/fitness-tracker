@@ -224,6 +224,7 @@ async function addExercise(exercise) {
     distance: exercise.distance || null,
     notes: exercise.notes || null,
     muscles: exercise.muscles ? JSON.stringify(exercise.muscles) : null,
+    set_details: exercise.set_details ? JSON.stringify(exercise.set_details) : null,
     companion: exercise.companion || null,
     bike_type: exercise.bike_type || null,
     difficulty: exercise.difficulty || null,
@@ -238,7 +239,7 @@ async function addExercise(exercise) {
   return result[0];
 }
 
-const EXERCISE_COLUMNS = 'id,date,type,name,weight,reps,sets,duration,distance,notes,muscles,companion,bike_type,difficulty,timestamp';
+const EXERCISE_COLUMNS = 'id,date,type,name,weight,reps,sets,duration,distance,notes,muscles,set_details,companion,bike_type,difficulty,timestamp';
 
 // Get all exercises for a specific date
 async function getExercisesByDate(date) {
@@ -258,17 +259,15 @@ async function getAllExercises() {
 function transformExercise(exercise) {
   let muscles = null;
   if (exercise.muscles) {
-    try {
-      muscles = JSON.parse(exercise.muscles);
-    } catch {
-      muscles = null;
-    }
+    try { muscles = JSON.parse(exercise.muscles); } catch { muscles = null; }
   }
 
-  return {
-    ...exercise,
-    muscles: muscles
-  };
+  let set_details = null;
+  if (exercise.set_details) {
+    try { set_details = typeof exercise.set_details === 'string' ? JSON.parse(exercise.set_details) : exercise.set_details; } catch { set_details = null; }
+  }
+
+  return { ...exercise, muscles, set_details };
 }
 
 // Update an exercise entry
@@ -331,7 +330,7 @@ async function getExerciseNamesForAutocomplete() {
 }
 
 // Get exercises for reports - excludes image data, supports optional date filter
-const REPORT_COLUMNS = 'id,date,type,name,weight,reps,sets,duration,distance,muscles,companion,bike_type,difficulty,timestamp';
+const REPORT_COLUMNS = 'id,date,type,name,weight,reps,sets,duration,distance,muscles,set_details,companion,bike_type,difficulty,timestamp';
 async function getExercisesForReports(startDate = null) {
   const userId = getCurrentUserId();
   let query = `exercises?user_id=eq.${userId}&select=${REPORT_COLUMNS}&order=timestamp.desc`;

@@ -11,9 +11,7 @@
     suggestionsContainer: null,
     muscleGroupsContainer: null,
     muscleSelector: null,
-    weightInput: null,
-    repsInput: null,
-    setsInput: null,
+    setsContainer: null,
     allActivitiesList: null,
     tabs: null,
     notesInput: null,
@@ -234,9 +232,7 @@
     elements.suggestionsContainer = UI.$('exercise-suggestions');
     elements.muscleGroupsContainer = UI.$('muscle-groups');
     elements.muscleSelector = UI.$('muscle-selector');
-    elements.weightInput = UI.$('weight');
-    elements.repsInput = UI.$('reps');
-    elements.setsInput = UI.$('sets');
+    elements.setsContainer = UI.$('sets-container');
     elements.allActivitiesList = UI.$('all-activities-list');
     elements.tabs = document.querySelectorAll('.tab');
     elements.notesInput = UI.$('exercise-notes');
@@ -284,6 +280,10 @@
 
     // Set up event listeners
     setupEventListeners();
+
+    // Seed the strength form with one default set row
+    buildSetRow(elements.setsContainer, 0, 10);
+
     localStorage.removeItem('bikeCompanions'); // migrated to DB-derived
     await initCompanionDropdown();
 
@@ -409,24 +409,19 @@
     elements.exerciseNameInput.addEventListener('input', handleExerciseInput);
     elements.exerciseNameInput.addEventListener('keydown', handleKeyboardNavigation);
     elements.exerciseNameInput.addEventListener('blur', async () => {
-      // Delay hiding to allow click on suggestion
-      setTimeout(() => {
-        elements.suggestionsContainer.classList.remove('active');
-      }, 200);
-
-      // Auto-fill if exercise name matches a known exercise
+      setTimeout(() => elements.suggestionsContainer.classList.remove('active'), 200);
       const name = elements.exerciseNameInput.value.trim();
-      if (name && elements.weightInput.value === '0' && elements.repsInput.value === '10') {
-        // Only auto-fill if fields haven't been manually changed
+      if (!name) return;
+      // Only auto-fill if the user hasn't modified the single default set row
+      const rows = elements.setsContainer.querySelectorAll('.set-row');
+      const isDefault = rows.length === 1 &&
+        parseFloat(rows[0].querySelector('.set-weight').value) === 0;
+      if (isDefault) {
         try {
           const lastExercise = await FitnessDB.getLastExerciseByName(name);
           if (lastExercise) {
-            elements.weightInput.value = lastExercise.weight || 0;
-            elements.repsInput.value = lastExercise.reps || ExerciseDB.EXERCISES.find(e => e.name === name)?.defaultReps || 10;
-            elements.setsInput.value = 1;
+            prefillSetsFromEntry(elements.setsContainer, lastExercise, name);
             if (lastExercise.notes) elements.notesInput.value = lastExercise.notes;
-
-            // Pre-populate muscles for custom exercises
             const isPredefined = ExerciseDB.getMuscleGroups(name).length > 0;
             if (!isPredefined) populateSavedMuscles(lastExercise.muscles);
           }
@@ -434,6 +429,15 @@
           console.error('Failed to fetch last exercise:', error);
         }
       }
+    });
+
+    // Add Set button
+    UI.$('add-set-btn').addEventListener('click', () => {
+      const rows = elements.setsContainer.querySelectorAll('.set-row');
+      const lastRow = rows[rows.length - 1];
+      const lastWeight = lastRow ? parseFloat(lastRow.querySelector('.set-weight').value) || 0 : 0;
+      const lastReps = lastRow ? parseInt(lastRow.querySelector('.set-reps').value) || 10 : 10;
+      buildSetRow(elements.setsContainer, lastWeight, lastReps);
     });
 
     // Tab switching
@@ -612,6 +616,16 @@
       const needsName = UI.$('edit-companion').value === 'with';
       UI.$('edit-companion-name').style.display = needsName ? 'block' : 'none';
       if (needsName) { UI.$('edit-companion-name').value = ''; UI.$('edit-companion-name').focus(); }
+    });
+
+    // Add Set button in edit modal
+    UI.$('edit-add-set-btn').addEventListener('click', () => {
+      const container = UI.$('edit-sets-container');
+      const rows = container.querySelectorAll('.set-row');
+      const lastRow = rows[rows.length - 1];
+      const lastWeight = lastRow ? parseFloat(lastRow.querySelector('.set-weight').value) || 0 : 0;
+      const lastReps = lastRow ? parseInt(lastRow.querySelector('.set-reps').value) || 10 : 10;
+      buildSetRow(container, lastWeight, lastReps);
     });
 
     // Live muscle tag update when checkboxes change in edit modal
@@ -866,6 +880,80 @@
     });
   }
 
+  // Build a single set row element
+  function buildSetRow(container, weight = 0, reps = 10) {
+    const row = document.createElement('div');
+    row.className = 'set-row';
+
+    const label = document.createElement('span');
+    label.className = 'set-label';
+
+    const weightInput = document.createElement('input');
+    weightInput.type = 'number';
+    weightInput.className = 'set-weight';
+    weightInput.min = '0';
+    weightInput.step = '2.5';
+    weightInput.value = weight;
+    weightInput.placeholder = '0';
+
+    const sep = document.createElement('span');
+    sep.className = 'set-sep';
+    sep.textContent = 'lbs ×';
+
+    const repsInput = document.createElement('input');
+    repsInput.type = 'number';
+    repsInput.className = 'set-reps';
+    repsInput.min = '1';
+    repsInput.value = reps;
+    repsInput.placeholder = '10';
+
+    const repsLabel = document.createElement('span');
+    repsLabel.className = 'set-sep';
+    repsLabel.textContent = 'reps';
+
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'btn-icon remove-set';
+    removeBtn.innerHTML = '×';
+    removeBtn.title = 'Remove set';
+    removeBtn.addEventListener('click', () => {
+      row.remove();
+      renumberSetRows(container);
+    });
+
+    row.append(label, weightInput, sep, repsInput, repsLabel, removeBtn);
+    container.appendChild(row);
+    renumberSetRows(container);
+    return row;
+  }
+
+  function renumberSetRows(container) {
+    container.querySelectorAll('.set-row').forEach((row, i) => {
+      const label = row.querySelector('.set-label');
+      if (label) label.textContent = `Set ${i + 1}`;
+      // Hide remove button when only one set remains
+      const btn = row.querySelector('.remove-set');
+      if (btn) btn.style.visibility = container.querySelectorAll('.set-row').length > 1 ? 'visible' : 'hidden';
+    });
+  }
+
+  function getSetDetails(container) {
+    return Array.from(container.querySelectorAll('.set-row')).map(row => ({
+      weight: parseFloat(row.querySelector('.set-weight').value) || 0,
+      reps: parseInt(row.querySelector('.set-reps').value) || 0
+    }));
+  }
+
+  function prefillSetsFromEntry(container, lastExercise, name) {
+    container.innerHTML = '';
+    const defaultReps = ExerciseDB.EXERCISES.find(e => e.name === name)?.defaultReps || 10;
+    if (lastExercise.set_details && lastExercise.set_details.length > 0) {
+      lastExercise.set_details.forEach(s => buildSetRow(container, s.weight, s.reps));
+    } else {
+      buildSetRow(container, lastExercise.weight || 0, lastExercise.reps || defaultReps);
+    }
+  }
+
   // Pre-populate muscle checkboxes and tags from saved muscle data
   function populateSavedMuscles(muscles) {
     if (!muscles || muscles.length === 0) return;
@@ -888,27 +976,23 @@
     elements.suggestionsContainer.classList.remove('active');
     UI.updateMuscleGroups(name, elements.muscleGroupsContainer);
 
-    // Fetch last exercise data and auto-fill
     try {
       const lastExercise = await FitnessDB.getLastExerciseByName(name);
       const exerciseDefaults = ExerciseDB.EXERCISES.find(e => e.name === name);
       if (lastExercise) {
-        elements.weightInput.value = lastExercise.weight || 0;
-        elements.repsInput.value = lastExercise.reps || exerciseDefaults?.defaultReps || 10;
-        elements.setsInput.value = 1;
+        prefillSetsFromEntry(elements.setsContainer, lastExercise, name);
         if (lastExercise.notes) elements.notesInput.value = lastExercise.notes;
-
-        // Pre-populate muscles for custom exercises
         const isPredefined = ExerciseDB.getMuscleGroups(name).length > 0;
         if (!isPredefined) populateSavedMuscles(lastExercise.muscles);
       } else if (exerciseDefaults?.defaultReps) {
-        elements.repsInput.value = exerciseDefaults.defaultReps;
+        const row = elements.setsContainer.querySelector('.set-row');
+        if (row) row.querySelector('.set-reps').value = exerciseDefaults.defaultReps;
       }
     } catch (error) {
       console.error('Failed to fetch last exercise:', error);
     }
 
-    elements.weightInput.focus();
+    elements.setsContainer.querySelector('.set-weight')?.focus();
   }
 
   // Handle form submission
@@ -916,17 +1000,14 @@
     e.preventDefault();
 
     const name = elements.exerciseNameInput.value.trim();
-    const weight = parseFloat(elements.weightInput.value) || 0;
-    const reps = parseInt(elements.repsInput.value) || 0;
-    const sets = parseInt(elements.setsInput.value) || 1;
-
     if (!name) {
       UI.showToast('Please enter an exercise name', 'error');
       return;
     }
 
-    if (reps < 1) {
-      UI.showToast('Please enter valid reps', 'error');
+    const setDetails = getSetDetails(elements.setsContainer);
+    if (setDetails.length === 0 || setDetails.some(s => s.reps < 1)) {
+      UI.showToast('Please enter valid reps for each set', 'error');
       return;
     }
 
@@ -941,13 +1022,18 @@
       if (selectedMuscles.length === 0) selectedMuscles = null;
     }
 
+    // Summary fields for backwards compat and progress chart (max weight)
+    const maxWeight = Math.max(...setDetails.map(s => s.weight));
+    const firstSet = setDetails[0];
+
     const exercise = {
       date: currentDate,
       type: 'strength',
       name,
-      weight,
-      reps,
-      sets,
+      weight: maxWeight,
+      reps: firstSet.reps,
+      sets: setDetails.length,
+      set_details: setDetails,
       notes: notes || null,
       muscles: selectedMuscles
     };
@@ -967,13 +1053,12 @@
   // Reset the form
   function resetForm() {
     elements.exerciseForm.reset();
-    elements.weightInput.value = '0';
-    elements.repsInput.value = '10';
-    elements.setsInput.value = '1';
     elements.notesInput.value = '';
     elements.muscleGroupsContainer.innerHTML = '';
     elements.muscleSelector.style.display = 'none';
     elements.muscleSelector.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+    elements.setsContainer.innerHTML = '';
+    buildSetRow(elements.setsContainer, 0, 10);
     elements.exerciseNameInput.focus();
   }
 
@@ -1249,9 +1334,15 @@
 
     if (isStrength) {
       UI.$('edit-modal-title').textContent = entry.name;
-      UI.$('edit-weight').value = entry.weight || 0;
-      UI.$('edit-reps').value = entry.reps || 10;
-      UI.$('edit-sets').value = entry.sets || 1;
+
+      // Populate set rows
+      const editSetsContainer = UI.$('edit-sets-container');
+      editSetsContainer.innerHTML = '';
+      if (entry.set_details && entry.set_details.length > 0) {
+        entry.set_details.forEach(s => buildSetRow(editSetsContainer, s.weight, s.reps));
+      } else {
+        buildSetRow(editSetsContainer, entry.weight || 0, entry.reps || 10);
+      }
 
       // Populate muscle groups
       const editMuscleGroups = UI.$('edit-muscle-groups');
@@ -1323,9 +1414,12 @@
     const updates = { notes: UI.$('edit-notes').value.trim() || null };
 
     if (type === 'strength') {
-      updates.weight = parseFloat(UI.$('edit-weight').value) || 0;
-      updates.reps = parseInt(UI.$('edit-reps').value) || 0;
-      updates.sets = parseInt(UI.$('edit-sets').value) || 1;
+      const editSetsContainer = UI.$('edit-sets-container');
+      const setDetails = getSetDetails(editSetsContainer);
+      updates.set_details = JSON.stringify(setDetails);
+      updates.weight = Math.max(...setDetails.map(s => s.weight));
+      updates.reps = setDetails[0]?.reps || 0;
+      updates.sets = setDetails.length;
       // Save muscle groups (always editable)
       const checked = UI.$('edit-muscle-selector').querySelectorAll('input[type="checkbox"]:checked');
       updates.muscles = Array.from(checked).map(cb => cb.value);

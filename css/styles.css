@@ -881,6 +881,55 @@ body {
   background-color: var(--bg-tertiary);
 }
 
+/* Set-by-set rows */
+.set-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.set-label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  min-width: 44px;
+}
+
+.set-sep {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.set-row input.set-weight,
+.set-row input.set-reps {
+  width: 70px;
+  padding: 8px;
+  text-align: center;
+}
+
+.btn-add-set {
+  width: 100%;
+  padding: 8px;
+  background-color: transparent;
+  color: var(--accent);
+  border: 1px dashed var(--accent);
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  cursor: pointer;
+  margin-top: 4px;
+  margin-bottom: 12px;
+}
+
+.btn-add-set:hover {
+  background-color: rgba(233, 69, 96, 0.08);
+}
+
+.exercise-sets {
+  white-space: pre-line;
+  line-height: 1.6;
+}
+
 .login-divider {
   display: flex;
   align-items: center;

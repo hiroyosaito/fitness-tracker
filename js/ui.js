@@ -65,12 +65,22 @@ const UI = {
       this.renderMuscleTags(muscles)
     );
 
-    const infoChildren = [
-      this.createElement('div', { className: 'exercise-name', textContent: exercise.name }),
-      this.createElement('div', {
+    let detailsEl;
+    if (exercise.set_details && exercise.set_details.length > 0) {
+      const lines = exercise.set_details.map((s, i) =>
+        `Set ${i + 1}: ${s.weight} lbs × ${s.reps} reps`
+      ).join('\n');
+      detailsEl = this.createElement('div', { className: 'exercise-details exercise-sets', textContent: lines });
+    } else {
+      detailsEl = this.createElement('div', {
         className: 'exercise-details',
         textContent: `${exercise.weight} lbs × ${exercise.reps} reps × ${exercise.sets} set${exercise.sets > 1 ? 's' : ''}`
-      }),
+      });
+    }
+
+    const infoChildren = [
+      this.createElement('div', { className: 'exercise-name', textContent: exercise.name }),
+      detailsEl,
       musclesContainer
     ];
 
