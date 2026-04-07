@@ -325,6 +325,15 @@ async function getExerciseHistoryByName(name) {
   return result.map(transformExercise);
 }
 
+// Get lightweight history for the History tab (date, type, name only)
+async function getWorkoutHistory() {
+  const userId = getCurrentUserId();
+  const result = await supabaseRequest(
+    `exercises?user_id=eq.${userId}&select=date,type,name&order=date.desc`
+  );
+  return result;
+}
+
 // Get exercise date counts for database check (lightweight)
 async function getExerciseDateCounts() {
   const userId = getCurrentUserId();
@@ -452,6 +461,7 @@ window.FitnessDB = {
   getExerciseNamesForAutocomplete,
   getExercisesForReports,
   getExerciseHistoryByName,
+  getWorkoutHistory,
   getExerciseDateCounts,
   statWorkoutDays,
   statStrengthDays,

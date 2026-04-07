@@ -48,6 +48,7 @@
   let cachedClassNames = [...PREDEFINED_CLASSES];
   let reportPeriod = 'week';
   let exerciseDropdownLoaded = false;
+  let historyLoaded = false;
 
   // Handle login screen
   async function setupAuth() {
@@ -587,6 +588,7 @@
 
     try {
       await FitnessDB.addExercise(cardio);
+      historyLoaded = false;
       UI.showToast('Cardio added!');
       elements.cardioForm.reset();
       elements.bikeTypeGroup.style.display = 'none';
@@ -655,6 +657,7 @@
 
     try {
       await FitnessDB.addExercise(classEntry);
+      historyLoaded = false;
       UI.showToast('Class added!');
       elements.classForm.reset();
       elements.classDuration.value = '60';
@@ -824,6 +827,7 @@
       await FitnessDB.addExercise(exercise);
       UI.showToast('Exercise added!');
       resetForm();
+      historyLoaded = false;
       await loadAllData();
       await loadUserExerciseNames(); // Refresh cache
     } catch (error) {
@@ -1119,6 +1123,7 @@
 
     try {
       await FitnessDB.deleteExercise(id);
+      historyLoaded = false;
       UI.showToast('Deleted');
       await Promise.all([loadAllData(), initCompanionDropdown()]);
     } catch (error) {
@@ -1142,6 +1147,68 @@
   // Make handleAddSet globally accessible
   window.handleAddSet = handleAddSet;
 
+  // Build a summary string for a day's entries
+  function buildDateSummary(entries) {
+    const cardioNames = { walking: 'Walking', biking: 'Biking', swimming: 'Swimming', running: 'Running', elliptical: 'Elliptical', stairmaster: 'Stairmaster', rowing: 'Rowing', other: 'Other' };
+    const parts = [];
+    const strengthCount = entries.filter(e => e.type === 'strength').length;
+    if (strengthCount > 0) parts.push(`${strengthCount} strength`);
+    entries.filter(e => e.type === 'cardio').forEach(e => parts.push(cardioNames[e.name] || e.name));
+    entries.filter(e => e.type === 'class').forEach(e => parts.push(e.name));
+    return parts.join(' · ');
+  }
+
+  // Load and render workout history
+  async function loadHistory() {
+    const container = UI.$('history-list');
+    const emptyState = UI.$('history-empty-state');
+    container.innerHTML = '<p class="empty-state">Loading...</p>';
+    emptyState.style.display = 'none';
+
+    try {
+      const entries = await FitnessDB.getWorkoutHistory();
+      container.innerHTML = '';
+
+      if (entries.length === 0) {
+        emptyState.style.display = 'block';
+        return;
+      }
+
+      // Group by date
+      const byDate = {};
+      entries.forEach(e => {
+        if (!byDate[e.date]) byDate[e.date] = [];
+        byDate[e.date].push(e);
+      });
+
+      Object.keys(byDate).sort().reverse().forEach(date => {
+        const dayEntries = byDate[date];
+        const count = dayEntries.length;
+        const item = document.createElement('div');
+        item.className = 'history-item';
+        item.innerHTML = `
+          <div>
+            <div class="history-date">${UI.formatDate(date)}</div>
+            <div class="history-summary">${buildDateSummary(dayEntries)}</div>
+          </div>
+          <div class="history-count">${count} ${count === 1 ? 'entry' : 'entries'} ›</div>
+        `;
+        item.addEventListener('click', () => {
+          currentDate = date;
+          elements.datePicker.value = date;
+          loadAllData();
+          switchTab('strength');
+        });
+        container.appendChild(item);
+      });
+
+      historyLoaded = true;
+    } catch (err) {
+      console.error('Failed to load history:', err);
+      container.innerHTML = '<p class="empty-state">Failed to load history.</p>';
+    }
+  }
+
   // Switch tabs
   function switchTab(tabName) {
     // Update tab buttons
@@ -1153,6 +1220,11 @@
     document.querySelectorAll('.section').forEach(section => {
       section.classList.toggle('active', section.id === `${tabName}-section`);
     });
+
+    // Lazy-load history on first open
+    if (tabName === 'history' && !historyLoaded) {
+      loadHistory();
+    }
   }
 
   // Initialize when DOM is ready

@@ -924,6 +924,45 @@ body {
   gap: var(--spacing-sm);
 }
 
+/* History Tab */
+.history-list {
+  padding: var(--spacing-xs) 0;
+}
+
+.history-item {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-md);
+  transition: background 0.2s;
+}
+
+.history-item:hover {
+  background: var(--bg-tertiary);
+}
+
+.history-date {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.history-summary {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.history-count {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .btn-text {
   background: none;
   border: none;
