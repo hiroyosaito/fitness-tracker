@@ -116,6 +116,7 @@ const EXERCISES = [
 
   // Mobility / Rehab
   { name: 'Wall Slides', muscles: ['shoulders', 'back', 'core'] },
+  { name: 'Wall Sit', muscles: ['quads', 'glutes', 'hamstrings', 'calves'] },
 
   // Compound/Full Body
   { name: 'Clean and Press', muscles: ['shoulders', 'back', 'quads', 'core'] },
