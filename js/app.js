@@ -277,14 +277,12 @@
 
     // Show/hide companion name inputs
     elements.bikeCompanion.addEventListener('change', () => {
-      const val = elements.bikeCompanion.value;
-      const needsName = ['__new_friends', '__new_family', 'other'].includes(val);
+      const needsName = elements.bikeCompanion.value === 'with';
       elements.bikeCompanionInput.style.display = needsName ? 'block' : 'none';
       if (needsName) { elements.bikeCompanionInput.value = ''; elements.bikeCompanionInput.focus(); }
     });
     elements.walkRunCompanion.addEventListener('change', () => {
-      const val = elements.walkRunCompanion.value;
-      const needsName = ['__new_friends', '__new_family', 'other'].includes(val);
+      const needsName = elements.walkRunCompanion.value === 'with';
       elements.walkRunCompanionInput.style.display = needsName ? 'block' : 'none';
       if (needsName) { elements.walkRunCompanionInput.value = ''; elements.walkRunCompanionInput.focus(); }
     });
@@ -394,7 +392,7 @@
     [elements.bikeCompanion, elements.walkRunCompanion].forEach(select => {
       select.querySelectorAll('[data-saved]').forEach(o => o.remove());
       if (names.length === 0) return;
-      const insertBefore = select.querySelector('[value="__new_friends"]');
+      const insertBefore = select.querySelector('[value="with"]');
       names.forEach(name => {
         const opt = document.createElement('option');
         opt.value = name;
@@ -432,10 +430,8 @@
         companionLabel = 'Alone';
       } else if (companionVal === 'group') {
         companionLabel = 'Group';
-      } else if (companionVal === '__new_friends' || companionVal === '__new_family') {
-        companionLabel = companionText ? `With ${companionText}` : (companionVal === '__new_friends' ? 'With Friend' : 'With Family');
-      } else if (companionVal === 'other') {
-        companionLabel = companionText ? `With ${companionText}` : 'Other';
+      } else if (companionVal === 'with') {
+        companionLabel = companionText ? `With ${companionText}` : 'With someone';
       } else {
         companionLabel = `With ${companionVal}`;
       }
@@ -449,10 +445,8 @@
         companionLabel = 'Alone';
       } else if (companionVal === 'group') {
         companionLabel = 'Group';
-      } else if (companionVal === '__new_friends' || companionVal === '__new_family') {
-        companionLabel = companionText ? `With ${companionText}` : (companionVal === '__new_friends' ? 'With Friend' : 'With Family');
-      } else if (companionVal === 'other') {
-        companionLabel = companionText ? `With ${companionText}` : 'Other';
+      } else if (companionVal === 'with') {
+        companionLabel = companionText ? `With ${companionText}` : 'With someone';
       } else {
         companionLabel = `With ${companionVal}`;
       }
