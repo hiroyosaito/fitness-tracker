@@ -423,7 +423,7 @@
           if (lastExercise) {
             elements.weightInput.value = lastExercise.weight || 0;
             elements.repsInput.value = lastExercise.reps || ExerciseDB.EXERCISES.find(e => e.name === name)?.defaultReps || 10;
-            elements.setsInput.value = lastExercise.sets || 1;
+            elements.setsInput.value = 1;
             if (lastExercise.notes) {
               elements.notesInput.value = lastExercise.notes;
             }
@@ -866,7 +866,7 @@
         // Auto-fill weight, reps, sets
         elements.weightInput.value = lastExercise.weight || 0;
         elements.repsInput.value = lastExercise.reps || exerciseDefaults?.defaultReps || 10;
-        elements.setsInput.value = lastExercise.sets || 1;
+        elements.setsInput.value = 1;
 
         // Auto-fill notes
         if (lastExercise.notes) {
