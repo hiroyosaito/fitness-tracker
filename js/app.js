@@ -37,9 +37,7 @@
 
   // Predefined class suggestions
   const PREDEFINED_CLASSES = [
-    'Aerobics', 'Aqua Zumba', 'Boxing', 'CrossFit', 'Dance', 'HIIT',
-    'Kickboxing', 'Line Dance', 'Meditation', 'Pilates', 'Spin',
-    'Stretch', 'Tai Chi', 'Yoga', 'Zumba'
+    'Aqua Zumba', 'Gentle Yoga', 'Line Dance', 'Tai Chi', 'Vinyasa Yoga', 'Zumba'
   ];
 
   // State
