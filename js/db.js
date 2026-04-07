@@ -342,6 +342,15 @@ async function getExerciseHistoryByName(name) {
   return result.map(transformExercise);
 }
 
+// Get all unique workout dates for streak calculation
+async function getWorkoutDates() {
+  const userId = getCurrentUserId();
+  const result = await supabaseRequest(
+    `exercises?user_id=eq.${userId}&select=date`
+  );
+  return [...new Set(result.map(r => r.date))];
+}
+
 // Get lightweight history for the History tab (date, type, name only)
 async function getWorkoutHistory() {
   const userId = getCurrentUserId();
@@ -478,6 +487,7 @@ window.FitnessDB = {
   getExerciseNamesForAutocomplete,
   getExercisesForReports,
   getExerciseHistoryByName,
+  getWorkoutDates,
   getWorkoutHistory,
   getExerciseDateCounts,
   statWorkoutDays,

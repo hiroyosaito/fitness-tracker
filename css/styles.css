@@ -924,6 +924,15 @@ body {
   gap: var(--spacing-sm);
 }
 
+/* Streak Banner */
+.streak-banner {
+  background: linear-gradient(135deg, #e67e22, #e94560);
+  color: white;
+  text-align: center;
+  padding: 8px var(--spacing-md);
+  font-size: 0.9rem;
+}
+
 /* History Tab */
 .history-list {
   padding: var(--spacing-xs) 0;

@@ -289,11 +289,53 @@
     // Set initial date
     elements.datePicker.value = currentDate;
 
-    // Load today's data and autocomplete caches in parallel
-    await Promise.all([loadAllData(), loadUserExerciseNames(), loadClassNames()]);
+    // Load today's data, autocomplete caches, and streak in parallel
+    await Promise.all([loadAllData(), loadUserExerciseNames(), loadClassNames(), updateStreak()]);
 
     // Silently migrate old encoded-notes entries to dedicated columns
     FitnessDB.migrateCardioColumns().catch(e => console.warn('Cardio migration:', e));
+  }
+
+  // Shift a YYYY-MM-DD date by N days
+  function dateOffset(dateStr, days) {
+    const d = new Date(dateStr + 'T00:00:00');
+    d.setDate(d.getDate() + days);
+    return d.toISOString().split('T')[0];
+  }
+
+  // Calculate consecutive-day streak from a set of date strings
+  function calculateStreak(dateSet) {
+    const today = UI.getTodayDate();
+    let start = today;
+    if (!dateSet.has(today)) {
+      const yesterday = dateOffset(today, -1);
+      if (!dateSet.has(yesterday)) return 0;
+      start = yesterday;
+    }
+    let streak = 0;
+    let current = start;
+    while (dateSet.has(current)) {
+      streak++;
+      current = dateOffset(current, -1);
+    }
+    return streak;
+  }
+
+  // Fetch dates and display streak banner
+  async function updateStreak() {
+    try {
+      const dates = await FitnessDB.getWorkoutDates();
+      const streak = calculateStreak(new Set(dates));
+      const banner = UI.$('streak-banner');
+      if (streak >= 2) {
+        UI.$('streak-count').textContent = streak;
+        banner.style.display = 'block';
+      } else {
+        banner.style.display = 'none';
+      }
+    } catch (e) {
+      console.warn('Streak load failed:', e);
+    }
   }
 
   // Load and cache class names (user's past + predefined)
@@ -834,8 +876,7 @@
       UI.showToast('Exercise added!');
       resetForm();
       historyLoaded = false;
-      await loadAllData();
-      await loadUserExerciseNames(); // Refresh cache
+      await Promise.all([loadAllData(), loadUserExerciseNames(), updateStreak()]);
     } catch (error) {
       console.error('Failed to add exercise:', error);
       UI.showToast('Failed to add exercise', 'error');
@@ -1220,7 +1261,7 @@
       await FitnessDB.deleteExercise(id);
       historyLoaded = false;
       UI.showToast('Deleted');
-      await Promise.all([loadAllData(), initCompanionDropdown()]);
+      await Promise.all([loadAllData(), initCompanionDropdown(), updateStreak()]);
     } catch (error) {
       console.error('Failed to delete:', error);
       UI.showToast('Failed to delete', 'error');
