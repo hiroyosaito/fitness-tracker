@@ -46,6 +46,7 @@
   let suggestions = [];
   let cachedUserExerciseNames = [];
   let cachedClassNames = [...PREDEFINED_CLASSES];
+  let cachedCustomCardioNames = [];
   let reportPeriod = 'week';
   let exerciseDropdownLoaded = false;
   let historyLoaded = false;
@@ -290,7 +291,7 @@
     elements.datePicker.value = currentDate;
 
     // Load today's data, autocomplete caches, and streak in parallel
-    await Promise.all([loadAllData(), loadUserExerciseNames(), loadClassNames(), updateStreak()]);
+    await Promise.all([loadAllData(), loadUserExerciseNames(), loadClassNames(), loadCustomCardioNames(), updateStreak()]);
 
     // Silently migrate old encoded-notes entries to dedicated columns
     FitnessDB.migrateCardioColumns().catch(e => console.warn('Cardio migration:', e));
@@ -336,6 +337,41 @@
     } catch (e) {
       console.warn('Streak load failed:', e);
     }
+  }
+
+  // Load and cache custom cardio names
+  async function loadCustomCardioNames() {
+    try {
+      cachedCustomCardioNames = await FitnessDB.getCustomCardioNames();
+    } catch (e) {
+      cachedCustomCardioNames = [];
+    }
+  }
+
+  // Show custom cardio suggestions
+  function showCustomCardioSuggestions(query) {
+    const container = UI.$('cardio-other-suggestions');
+    const q = query.trim().toLowerCase();
+    const matches = q
+      ? cachedCustomCardioNames.filter(n => n.toLowerCase().includes(q))
+      : cachedCustomCardioNames;
+
+    container.innerHTML = '';
+    if (matches.length === 0) { container.classList.remove('active'); return; }
+
+    matches.slice(0, 8).forEach((name, i) => {
+      const li = UI.createElement('li', {
+        textContent: name,
+        onClick: () => {
+          UI.$('cardio-other-name').value = name;
+          container.classList.remove('active');
+          elements.cardioDuration.focus();
+        }
+      });
+      if (i === 0) li.classList.add('selected');
+      container.appendChild(li);
+    });
+    container.classList.add('active');
   }
 
   // Load and cache class names (user's past + predefined)
@@ -425,7 +461,8 @@
       elements.walkRunCompanionGroup.style.display = isWalkRun ? 'block' : 'none';
       if (!isWalkRun) { elements.walkRunCompanionInput.style.display = 'none'; }
       UI.$('cardio-other-group').style.display = isOther ? 'block' : 'none';
-      if (isOther) UI.$('cardio-other-name').focus();
+      UI.$('cardio-other-suggestions').classList.remove('active');
+      if (isOther) { UI.$('cardio-other-name').focus(); showCustomCardioSuggestions(''); }
     });
 
     // Show/hide companion name inputs
@@ -438,6 +475,12 @@
       const needsName = elements.walkRunCompanion.value === 'with';
       elements.walkRunCompanionInput.style.display = needsName ? 'block' : 'none';
       if (needsName) { elements.walkRunCompanionInput.value = ''; elements.walkRunCompanionInput.focus(); }
+    });
+
+    // Custom cardio name autocomplete
+    UI.$('cardio-other-name').addEventListener('input', (e) => showCustomCardioSuggestions(e.target.value));
+    UI.$('cardio-other-name').addEventListener('blur', () => {
+      setTimeout(() => UI.$('cardio-other-suggestions').classList.remove('active'), 200);
     });
 
     // Class name autocomplete
@@ -655,7 +698,7 @@
       UI.$('cardio-other-group').style.display = 'none';
       elements.cardioDuration.value = '30';
       elements.cardioDistance.value = '0';
-      await Promise.all([loadAllData(), initCompanionDropdown()]);
+      await Promise.all([loadAllData(), initCompanionDropdown(), loadCustomCardioNames()]);
     } catch (error) {
       console.error('Failed to add cardio:', error);
       UI.showToast('Failed to add cardio', 'error');

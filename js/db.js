@@ -303,6 +303,15 @@ async function getExercisesGroupedByDate() {
   return grouped;
 }
 
+// Get unique custom cardio names (non-standard activities the user has logged)
+async function getCustomCardioNames() {
+  const userId = getCurrentUserId();
+  const result = await supabaseRequest(
+    `exercises?user_id=eq.${userId}&type=eq.cardio&name=not.in.(walking,biking,swimming,running,elliptical,stairmaster,rowing)&select=name`
+  );
+  return [...new Set(result.map(r => r.name))].sort();
+}
+
 // Get unique class names the user has logged before
 async function getClassNamesForAutocomplete() {
   const userId = getCurrentUserId();
@@ -483,6 +492,7 @@ window.FitnessDB = {
   updateExercise,
   deleteExercise,
   getExercisesGroupedByDate,
+  getCustomCardioNames,
   getClassNamesForAutocomplete,
   getExerciseNamesForAutocomplete,
   getExercisesForReports,
