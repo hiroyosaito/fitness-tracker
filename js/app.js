@@ -503,6 +503,9 @@
       return `<span class="stat-number">${count}</span><span style="color:var(--text-secondary);font-size:0.85rem">classes attended</span>`;
     }));
 
+    // Change password button
+    UI.$('change-pw-btn').addEventListener('click', handleChangePassword);
+
     // Export button
     UI.$('export-btn').addEventListener('click', handleExport);
 
@@ -865,6 +868,46 @@
       console.error('Failed to load data:', error);
       UI.showToast('Load error: ' + error.message, 'error');
     }
+  }
+
+  // Handle change password
+  async function handleChangePassword() {
+    const newPw = UI.$('new-pw').value;
+    const confirmPw = UI.$('confirm-pw').value;
+    const msg = UI.$('change-pw-message');
+    const btn = UI.$('change-pw-btn');
+
+    msg.style.display = 'none';
+
+    if (!newPw || newPw.length < 6) {
+      msg.textContent = 'Password must be at least 6 characters.';
+      msg.style.color = 'var(--accent)';
+      msg.style.display = 'block';
+      return;
+    }
+    if (newPw !== confirmPw) {
+      msg.textContent = 'Passwords do not match.';
+      msg.style.color = 'var(--accent)';
+      msg.style.display = 'block';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Updating...';
+    try {
+      await FitnessDB.changePassword(newPw);
+      UI.$('new-pw').value = '';
+      UI.$('confirm-pw').value = '';
+      msg.textContent = 'Password updated successfully.';
+      msg.style.color = 'var(--success)';
+      msg.style.display = 'block';
+    } catch (err) {
+      msg.textContent = err.message;
+      msg.style.color = 'var(--accent)';
+      msg.style.display = 'block';
+    }
+    btn.disabled = false;
+    btn.textContent = 'Update Password';
   }
 
   // Convert rows to CSV string
