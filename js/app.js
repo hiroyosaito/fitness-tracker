@@ -613,6 +613,18 @@
       UI.$('edit-companion-name').style.display = needsName ? 'block' : 'none';
       if (needsName) { UI.$('edit-companion-name').value = ''; UI.$('edit-companion-name').focus(); }
     });
+
+    // Live muscle tag update when checkboxes change in edit modal
+    UI.$('edit-muscle-selector').addEventListener('change', () => {
+      const checked = Array.from(UI.$('edit-muscle-selector').querySelectorAll('input[type="checkbox"]:checked'));
+      const muscleTags = checked.map(cb => ({
+        key: cb.value,
+        name: cb.value.charAt(0).toUpperCase() + cb.value.slice(1),
+        color: window.ExerciseDB.MUSCLE_GROUPS[cb.value]?.color || '#666'
+      }));
+      UI.$('edit-muscle-groups').innerHTML = '';
+      UI.renderMuscleTags(muscleTags).forEach(tag => UI.$('edit-muscle-groups').appendChild(tag));
+    });
   }
 
   // Populate companion dropdowns from DB entries (always in sync with deletions)
@@ -1240,6 +1252,36 @@
       UI.$('edit-weight').value = entry.weight || 0;
       UI.$('edit-reps').value = entry.reps || 10;
       UI.$('edit-sets').value = entry.sets || 1;
+
+      // Populate muscle groups
+      const editMuscleGroups = UI.$('edit-muscle-groups');
+      const editMuscleSelector = UI.$('edit-muscle-selector');
+      editMuscleGroups.innerHTML = '';
+      editMuscleSelector.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+
+      const predefinedMuscles = ExerciseDB.getMuscleGroups(entry.name);
+      if (predefinedMuscles.length > 0) {
+        // Predefined exercise: show tags, hide selector
+        editMuscleSelector.style.display = 'none';
+        UI.renderMuscleTags(predefinedMuscles).forEach(tag => editMuscleGroups.appendChild(tag));
+      } else {
+        // Custom exercise: show selector with saved muscles checked
+        const muscles = entry.muscles || [];
+        if (muscles.length > 0) {
+          editMuscleSelector.style.display = 'block';
+          editMuscleSelector.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+            cb.checked = muscles.includes(cb.value);
+          });
+          const muscleTags = muscles.map(key => ({
+            key,
+            name: key.charAt(0).toUpperCase() + key.slice(1),
+            color: window.ExerciseDB.MUSCLE_GROUPS[key]?.color || '#666'
+          }));
+          UI.renderMuscleTags(muscleTags).forEach(tag => editMuscleGroups.appendChild(tag));
+        } else {
+          editMuscleSelector.style.display = 'block';
+        }
+      }
     } else if (isCardio) {
       UI.$('edit-modal-title').textContent = activityNames[entry.name] || entry.name;
       UI.$('edit-duration').value = entry.duration || 0;
@@ -1290,6 +1332,12 @@
       updates.weight = parseFloat(UI.$('edit-weight').value) || 0;
       updates.reps = parseInt(UI.$('edit-reps').value) || 0;
       updates.sets = parseInt(UI.$('edit-sets').value) || 1;
+      // Save muscle groups for custom exercises
+      const isPredefined = ExerciseDB.getMuscleGroups(editingEntry.name).length > 0;
+      if (!isPredefined) {
+        const checked = UI.$('edit-muscle-selector').querySelectorAll('input[type="checkbox"]:checked');
+        updates.muscles = Array.from(checked).map(cb => cb.value);
+      }
     } else if (type === 'cardio' || type === 'class') {
       updates.duration = parseInt(UI.$('edit-duration').value) || 0;
       if (type === 'cardio') {
