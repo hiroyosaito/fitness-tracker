@@ -503,6 +503,9 @@
       return `<span class="stat-number">${count}</span><span style="color:var(--text-secondary);font-size:0.85rem">classes attended</span>`;
     }));
 
+    // Export button
+    UI.$('export-btn').addEventListener('click', handleExport);
+
     // Database check button
     UI.$('check-db-btn').addEventListener('click', checkDatabase);
 
@@ -862,6 +865,55 @@
       console.error('Failed to load data:', error);
       UI.showToast('Load error: ' + error.message, 'error');
     }
+  }
+
+  // Convert rows to CSV string
+  function toCSV(rows) {
+    const headers = ['Date', 'Type', 'Name', 'Weight (lbs)', 'Reps', 'Sets', 'Duration (min)', 'Distance (mi)', 'Companion', 'Bike Type', 'Difficulty', 'Notes'];
+    const escape = val => {
+      if (val === null || val === undefined) return '';
+      const str = String(val);
+      return (str.includes(',') || str.includes('"') || str.includes('\n'))
+        ? `"${str.replace(/"/g, '""')}"`
+        : str;
+    };
+    const lines = [headers.join(',')];
+    rows.forEach(r => {
+      lines.push([
+        r.date, r.type, r.name,
+        r.weight ?? '', r.reps ?? '', r.sets ?? '',
+        r.duration ?? '', r.distance ?? '',
+        r.companion ?? '', r.bike_type ?? '', r.difficulty ?? '',
+        r.notes ?? ''
+      ].map(escape).join(','));
+    });
+    return lines.join('\n');
+  }
+
+  // Handle CSV export
+  async function handleExport() {
+    const btn = UI.$('export-btn');
+    btn.disabled = true;
+    btn.textContent = 'Exporting...';
+    try {
+      const data = await FitnessDB.getExercisesForReports();
+      const sorted = [...data].sort((a, b) => a.date.localeCompare(b.date));
+      const csv = toCSV(sorted);
+      const filename = `getfitdaily-${UI.getTodayDate()}.csv`;
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      UI.showToast('Downloaded!');
+    } catch (err) {
+      console.error('Export failed:', err);
+      UI.showToast('Export failed', 'error');
+    }
+    btn.disabled = false;
+    btn.textContent = 'Download CSV';
   }
 
   // Check what's actually in Supabase
