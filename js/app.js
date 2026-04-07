@@ -58,6 +58,50 @@
       window.location.reload();
     });
 
+    // Handle password recovery redirect
+    const recoveryToken = FitnessDB.getRecoveryToken();
+    if (recoveryToken) {
+      history.replaceState(null, '', window.location.pathname);
+      UI.$('login-form').style.display = 'none';
+      document.querySelector('.login-divider').style.display = 'none';
+      document.getElementById('google-btn').style.display = 'none';
+      UI.$('set-password-section').style.display = 'block';
+
+      UI.$('save-password-btn').addEventListener('click', async () => {
+        const newPassword = UI.$('new-password').value;
+        const msg = UI.$('set-password-message');
+        if (!newPassword || newPassword.length < 6) {
+          msg.textContent = 'Password must be at least 6 characters.';
+          msg.style.color = 'var(--accent)';
+          msg.style.display = 'block';
+          return;
+        }
+        const btn = UI.$('save-password-btn');
+        btn.disabled = true;
+        btn.textContent = 'Saving...';
+        try {
+          await FitnessDB.updatePassword(newPassword, recoveryToken);
+          msg.textContent = 'Password updated! Redirecting to sign in...';
+          msg.style.color = 'var(--success)';
+          msg.style.display = 'block';
+          setTimeout(() => {
+            UI.$('set-password-section').style.display = 'none';
+            UI.$('login-form').style.display = 'block';
+            document.querySelector('.login-divider').style.display = '';
+            document.getElementById('google-btn').style.display = 'block';
+          }, 2000);
+        } catch (err) {
+          msg.textContent = err.message;
+          msg.style.color = 'var(--accent)';
+          msg.style.display = 'block';
+          btn.disabled = false;
+          btn.textContent = 'Save Password';
+        }
+      });
+
+      return false;
+    }
+
     // Handle OAuth redirect-back (Google)
     const oauthHandled = await FitnessDB.handleOAuthCallback();
     if (oauthHandled) {
@@ -125,6 +169,49 @@
     // Google sign in
     document.getElementById('google-btn').addEventListener('click', () => {
       FitnessDB.signInWithGoogle();
+    });
+
+    // Forgot password — show email entry section
+    UI.$('forgot-password-link').addEventListener('click', () => {
+      UI.$('login-form').style.display = 'none';
+      document.querySelector('.login-divider').style.display = 'none';
+      document.getElementById('google-btn').style.display = 'none';
+      UI.$('forgot-password-section').style.display = 'block';
+    });
+
+    UI.$('back-to-login-btn').addEventListener('click', () => {
+      UI.$('forgot-password-section').style.display = 'none';
+      UI.$('reset-message').style.display = 'none';
+      UI.$('login-form').style.display = 'block';
+      document.querySelector('.login-divider').style.display = '';
+      document.getElementById('google-btn').style.display = 'block';
+    });
+
+    UI.$('send-reset-btn').addEventListener('click', async () => {
+      const email = UI.$('reset-email').value.trim();
+      const msg = UI.$('reset-message');
+      const btn = UI.$('send-reset-btn');
+      if (!email) {
+        msg.textContent = 'Please enter your email.';
+        msg.style.color = 'var(--accent)';
+        msg.style.display = 'block';
+        return;
+      }
+      btn.disabled = true;
+      btn.textContent = 'Sending...';
+      try {
+        await FitnessDB.requestPasswordReset(email);
+        msg.textContent = 'Check your email for a reset link.';
+        msg.style.color = 'var(--success)';
+        msg.style.display = 'block';
+        btn.textContent = 'Sent!';
+      } catch (err) {
+        msg.textContent = err.message;
+        msg.style.color = 'var(--accent)';
+        msg.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Send Reset Link';
+      }
     });
 
     return false;

@@ -49,6 +49,7 @@ async function handleOAuthCallback() {
   const hash = window.location.hash.substring(1);
   if (!hash) return false;
   const params = new URLSearchParams(hash);
+  if (params.get('type') === 'recovery') return false; // handled by password reset flow
   const accessToken = params.get('access_token');
   if (!accessToken) return false;
 
@@ -70,6 +71,46 @@ async function handleOAuthCallback() {
     return true;
   } catch {
     return false;
+  }
+}
+
+// Check if URL contains a password recovery token
+function getRecoveryToken() {
+  const hash = window.location.hash.substring(1);
+  if (!hash) return null;
+  const params = new URLSearchParams(hash);
+  if (params.get('type') !== 'recovery') return null;
+  return params.get('access_token') || null;
+}
+
+// Send password reset email
+async function requestPasswordReset(email) {
+  const redirectTo = window.location.origin + window.location.pathname;
+  const response = await fetch(`${SUPABASE_URL}/auth/v1/recover?redirect_to=${encodeURIComponent(redirectTo)}`, {
+    method: 'POST',
+    headers: { 'apikey': SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email })
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.error_description || data.msg || 'Failed to send reset email');
+  }
+}
+
+// Update password using a recovery access token
+async function updatePassword(newPassword, accessToken) {
+  const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+    method: 'PUT',
+    headers: {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ password: newPassword })
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.error_description || data.msg || data.message || 'Failed to update password');
   }
 }
 
@@ -415,6 +456,9 @@ window.FitnessDB = {
   signOut,
   signInWithGoogle,
   handleOAuthCallback,
+  getRecoveryToken,
+  requestPasswordReset,
+  updatePassword,
   restoreSession,
   getCurrentUserId
 };

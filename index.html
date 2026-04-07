@@ -35,7 +35,31 @@
         </div>
         <button type="submit" id="signin-btn" class="btn-primary">Sign In</button>
         <button type="button" id="signup-btn" class="btn-secondary">Create Account</button>
+        <button type="button" id="forgot-password-link" class="btn-text">Forgot password?</button>
       </form>
+
+      <!-- Forgot password: enter email -->
+      <div id="forgot-password-section" style="display:none;">
+        <p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:16px;">Enter your email and we'll send you a reset link.</p>
+        <div class="form-group">
+          <label for="reset-email">Email</label>
+          <input type="email" id="reset-email" placeholder="you@example.com">
+        </div>
+        <div id="reset-message" style="display:none;font-size:0.9rem;margin-bottom:12px;"></div>
+        <button type="button" id="send-reset-btn" class="btn-primary">Send Reset Link</button>
+        <button type="button" id="back-to-login-btn" class="btn-text">Back to Sign In</button>
+      </div>
+
+      <!-- Set new password: shown after clicking reset link in email -->
+      <div id="set-password-section" style="display:none;">
+        <p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:16px;">Enter your new password.</p>
+        <div class="form-group">
+          <label for="new-password">New Password</label>
+          <input type="password" id="new-password" placeholder="At least 6 characters">
+        </div>
+        <div id="set-password-message" style="display:none;font-size:0.9rem;margin-bottom:12px;"></div>
+        <button type="button" id="save-password-btn" class="btn-primary">Save Password</button>
+      </div>
 
       <div class="login-divider"><span>or</span></div>
 
