@@ -378,6 +378,13 @@
 
     // Database check button
     UI.$('check-db-btn').addEventListener('click', checkDatabase);
+
+    // Edit modal
+    UI.$('edit-cancel-btn').addEventListener('click', closeEditModal);
+    UI.$('edit-form').addEventListener('submit', handleEditSave);
+    UI.$('edit-modal').addEventListener('click', (e) => {
+      if (e.target === UI.$('edit-modal')) closeEditModal();
+    });
   }
 
   // Populate companion dropdowns from DB entries (always in sync with deletions)
@@ -698,9 +705,9 @@
     try {
       const allEntries = await FitnessDB.getExercisesByDate(fetchingFor);
       if (fetchingFor !== currentDate) return; // date changed while fetching, discard stale result
-      UI.renderAllActivities(allEntries, elements.allActivitiesList, handleDeleteExercise, 'all-empty-state');
-      UI.renderCardioList(allEntries.filter(e => e.type === 'cardio'), elements.cardioList, handleDeleteExercise, 'cardio-empty-state');
-      UI.renderClassList(allEntries.filter(e => e.type === 'class'), elements.classList, handleDeleteExercise, 'class-empty-state');
+      UI.renderAllActivities(allEntries, elements.allActivitiesList, handleDeleteExercise, 'all-empty-state', openEditModal);
+      UI.renderCardioList(allEntries.filter(e => e.type === 'cardio'), elements.cardioList, handleDeleteExercise, 'cardio-empty-state', openEditModal);
+      UI.renderClassList(allEntries.filter(e => e.type === 'class'), elements.classList, handleDeleteExercise, 'class-empty-state', openEditModal);
     } catch (error) {
       console.error('Failed to load data:', error);
       UI.showToast('Load error: ' + error.message, 'error');
@@ -847,6 +854,76 @@
     } catch (error) {
       console.error('Failed to load exercise progress:', error);
       elements.progressChart.innerHTML = '<p class="empty-state">Error loading data</p>';
+    }
+  }
+
+  // Edit modal state
+  let editingEntry = null;
+
+  function openEditModal(entry) {
+    editingEntry = entry;
+    UI.$('edit-id').value = entry.id;
+    UI.$('edit-type').value = entry.type;
+    UI.$('edit-notes').value = entry.notes || '';
+
+    const isStrength = entry.type === 'strength';
+    const isCardio = entry.type === 'cardio';
+    const isClass = entry.type === 'class';
+
+    UI.$('edit-strength-fields').style.display = isStrength ? 'block' : 'none';
+    UI.$('edit-duration-group').style.display = (isCardio || isClass) ? 'block' : 'none';
+    UI.$('edit-distance-group').style.display = isCardio ? 'block' : 'none';
+
+    const activityNames = { walking:'Walking', biking:'Biking', swimming:'Swimming', running:'Running', elliptical:'Elliptical', stairmaster:'Stairmaster', rowing:'Rowing', other:'Other' };
+
+    if (isStrength) {
+      UI.$('edit-modal-title').textContent = entry.name;
+      UI.$('edit-weight').value = entry.weight || 0;
+      UI.$('edit-reps').value = entry.reps || 10;
+      UI.$('edit-sets').value = entry.sets || 1;
+    } else if (isCardio) {
+      UI.$('edit-modal-title').textContent = activityNames[entry.name] || entry.name;
+      UI.$('edit-duration').value = entry.duration || 0;
+      UI.$('edit-distance').value = entry.distance || 0;
+    } else if (isClass) {
+      UI.$('edit-modal-title').textContent = entry.name;
+      UI.$('edit-duration').value = entry.duration || 0;
+    }
+
+    UI.$('edit-modal').style.display = 'flex';
+  }
+
+  function closeEditModal() {
+    UI.$('edit-modal').style.display = 'none';
+    editingEntry = null;
+  }
+
+  async function handleEditSave(e) {
+    e.preventDefault();
+    if (!editingEntry) return;
+
+    const type = UI.$('edit-type').value;
+    const updates = { notes: UI.$('edit-notes').value.trim() || null };
+
+    if (type === 'strength') {
+      updates.weight = parseFloat(UI.$('edit-weight').value) || 0;
+      updates.reps = parseInt(UI.$('edit-reps').value) || 0;
+      updates.sets = parseInt(UI.$('edit-sets').value) || 1;
+    } else if (type === 'cardio' || type === 'class') {
+      updates.duration = parseInt(UI.$('edit-duration').value) || 0;
+      if (type === 'cardio') {
+        updates.distance = parseFloat(UI.$('edit-distance').value) || 0;
+      }
+    }
+
+    try {
+      await FitnessDB.updateExercise(editingEntry.id, updates);
+      UI.showToast('Updated!');
+      closeEditModal();
+      await loadAllData();
+    } catch (err) {
+      console.error('Failed to update:', err);
+      UI.showToast('Failed to update', 'error');
     }
   }
 

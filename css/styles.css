@@ -527,6 +527,49 @@ body {
   color: white;
 }
 
+.btn-icon.edit:hover {
+  background: #2980b9;
+  color: white;
+}
+
+/* Edit Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  padding: var(--spacing-md);
+}
+
+.modal-card {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  width: 100%;
+  max-width: 480px;
+  border: 1px solid var(--border);
+}
+
+.modal-card h2 {
+  margin-bottom: var(--spacing-md);
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.modal-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+}
+
+.modal-actions .btn-primary,
+.modal-actions .btn-secondary {
+  flex: 1;
+}
+
 /* Empty State */
 .empty-state {
   text-align: center;

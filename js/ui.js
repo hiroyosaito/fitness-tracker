@@ -49,7 +49,7 @@ const UI = {
   },
 
   // Render a single exercise item
-  renderExerciseItem(exercise, onDelete) {
+  renderExerciseItem(exercise, onDelete, onEdit) {
     // Get muscles from predefined list or from saved custom muscles
     let muscles = window.ExerciseDB.getMuscleGroups(exercise.name);
     if (muscles.length === 0 && exercise.muscles && exercise.muscles.length > 0) {
@@ -84,6 +84,13 @@ const UI = {
 
     const infoDiv = this.createElement('div', { className: 'exercise-info' }, infoChildren);
 
+    const editBtn = this.createElement('button', {
+      className: 'btn-icon edit',
+      innerHTML: '✎',
+      title: 'Edit',
+      onClick: () => onEdit && onEdit(exercise)
+    });
+
     const addSetBtn = this.createElement('button', {
       className: 'btn-icon add-set',
       innerHTML: '+1',
@@ -102,7 +109,7 @@ const UI = {
       onClick: () => onDelete(exercise.id)
     });
 
-    const actionsDiv = this.createElement('div', { className: 'exercise-actions' }, [addSetBtn, deleteBtn]);
+    const actionsDiv = this.createElement('div', { className: 'exercise-actions' }, [editBtn, addSetBtn, deleteBtn]);
 
     const children = [infoDiv, actionsDiv];
 
@@ -110,7 +117,7 @@ const UI = {
   },
 
   // Render exercise list
-  renderExerciseList(exercises, container, onDelete, emptyStateId = 'empty-state') {
+  renderExerciseList(exercises, container, onDelete, emptyStateId = 'empty-state', onEdit) {
     container.innerHTML = '';
 
     const emptyState = this.$(emptyStateId);
@@ -125,12 +132,12 @@ const UI = {
     const sorted = [...exercises].sort((a, b) => b.timestamp - a.timestamp);
 
     sorted.forEach(exercise => {
-      container.appendChild(this.renderExerciseItem(exercise, onDelete));
+      container.appendChild(this.renderExerciseItem(exercise, onDelete, onEdit));
     });
   },
 
   // Render cardio item
-  renderCardioItem(cardio, onDelete) {
+  renderCardioItem(cardio, onDelete, onEdit) {
     const activityNames = {
       walking: 'Walking',
       biking: 'Biking',
@@ -168,6 +175,13 @@ const UI = {
 
     const infoDiv = this.createElement('div', { className: 'exercise-info' }, infoChildren);
 
+    const editBtn = this.createElement('button', {
+      className: 'btn-icon edit',
+      innerHTML: '✎',
+      title: 'Edit',
+      onClick: () => onEdit && onEdit(cardio)
+    });
+
     const deleteBtn = this.createElement('button', {
       className: 'btn-icon delete',
       innerHTML: '×',
@@ -175,13 +189,13 @@ const UI = {
       onClick: () => onDelete(cardio.id)
     });
 
-    const actionsDiv = this.createElement('div', { className: 'exercise-actions' }, [deleteBtn]);
+    const actionsDiv = this.createElement('div', { className: 'exercise-actions' }, [editBtn, deleteBtn]);
 
     return this.createElement('li', { className: 'exercise-item' }, [infoDiv, actionsDiv]);
   },
 
   // Render cardio list
-  renderCardioList(cardioEntries, container, onDelete, emptyStateId) {
+  renderCardioList(cardioEntries, container, onDelete, emptyStateId, onEdit) {
     container.innerHTML = '';
 
     const emptyState = this.$(emptyStateId);
@@ -195,12 +209,12 @@ const UI = {
     const sorted = [...cardioEntries].sort((a, b) => b.timestamp - a.timestamp);
 
     sorted.forEach(cardio => {
-      container.appendChild(this.renderCardioItem(cardio, onDelete));
+      container.appendChild(this.renderCardioItem(cardio, onDelete, onEdit));
     });
   },
 
   // Render class item
-  renderClassItem(classEntry, onDelete) {
+  renderClassItem(classEntry, onDelete, onEdit) {
     const infoChildren = [
       this.createElement('div', { className: 'exercise-name', textContent: classEntry.name }),
       this.createElement('div', { className: 'exercise-details', textContent: `${classEntry.duration} min` })
@@ -215,6 +229,13 @@ const UI = {
 
     const infoDiv = this.createElement('div', { className: 'exercise-info' }, infoChildren);
 
+    const editBtn = this.createElement('button', {
+      className: 'btn-icon edit',
+      innerHTML: '✎',
+      title: 'Edit',
+      onClick: () => onEdit && onEdit(classEntry)
+    });
+
     const deleteBtn = this.createElement('button', {
       className: 'btn-icon delete',
       innerHTML: '×',
@@ -222,13 +243,13 @@ const UI = {
       onClick: () => onDelete(classEntry.id)
     });
 
-    const actionsDiv = this.createElement('div', { className: 'exercise-actions' }, [deleteBtn]);
+    const actionsDiv = this.createElement('div', { className: 'exercise-actions' }, [editBtn, deleteBtn]);
 
     return this.createElement('li', { className: 'exercise-item' }, [infoDiv, actionsDiv]);
   },
 
   // Render class list
-  renderClassList(classEntries, container, onDelete, emptyStateId) {
+  renderClassList(classEntries, container, onDelete, emptyStateId, onEdit) {
     container.innerHTML = '';
 
     const emptyState = this.$(emptyStateId);
@@ -242,12 +263,12 @@ const UI = {
     const sorted = [...classEntries].sort((a, b) => b.timestamp - a.timestamp);
 
     sorted.forEach(classEntry => {
-      container.appendChild(this.renderClassItem(classEntry, onDelete));
+      container.appendChild(this.renderClassItem(classEntry, onDelete, onEdit));
     });
   },
 
   // Render all activities (strength, cardio, classes) combined
-  renderAllActivities(activities, container, onDelete, emptyStateId) {
+  renderAllActivities(activities, container, onDelete, emptyStateId, onEdit) {
     container.innerHTML = '';
 
     const emptyState = this.$(emptyStateId);
@@ -264,11 +285,11 @@ const UI = {
     sorted.forEach(activity => {
       let item;
       if (activity.type === 'strength') {
-        item = this.renderExerciseItem(activity, onDelete);
+        item = this.renderExerciseItem(activity, onDelete, onEdit);
       } else if (activity.type === 'cardio') {
-        item = this.renderCardioItem(activity, onDelete);
+        item = this.renderCardioItem(activity, onDelete, onEdit);
       } else if (activity.type === 'class') {
-        item = this.renderClassItem(activity, onDelete);
+        item = this.renderClassItem(activity, onDelete, onEdit);
       }
       if (item) {
         // Add a type badge
