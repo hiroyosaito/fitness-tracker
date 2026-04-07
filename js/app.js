@@ -424,9 +424,11 @@
             elements.weightInput.value = lastExercise.weight || 0;
             elements.repsInput.value = lastExercise.reps || ExerciseDB.EXERCISES.find(e => e.name === name)?.defaultReps || 10;
             elements.setsInput.value = 1;
-            if (lastExercise.notes) {
-              elements.notesInput.value = lastExercise.notes;
-            }
+            if (lastExercise.notes) elements.notesInput.value = lastExercise.notes;
+
+            // Pre-populate muscles for custom exercises
+            const isPredefined = ExerciseDB.getMuscleGroups(name).length > 0;
+            if (!isPredefined) populateSavedMuscles(lastExercise.muscles);
           }
         } catch (error) {
           console.error('Failed to fetch last exercise:', error);
@@ -852,6 +854,22 @@
     });
   }
 
+  // Pre-populate muscle checkboxes and tags from saved muscle data
+  function populateSavedMuscles(muscles) {
+    if (!muscles || muscles.length === 0) return;
+    elements.muscleSelector.style.display = 'block';
+    elements.muscleSelector.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+      cb.checked = muscles.includes(cb.value);
+    });
+    const muscleTags = muscles.map(key => ({
+      key,
+      name: key.charAt(0).toUpperCase() + key.slice(1),
+      color: window.ExerciseDB.MUSCLE_GROUPS[key]?.color || '#666'
+    }));
+    elements.muscleGroupsContainer.innerHTML = '';
+    UI.renderMuscleTags(muscleTags).forEach(tag => elements.muscleGroupsContainer.appendChild(tag));
+  }
+
   // Select an exercise from suggestions
   async function selectExercise(name) {
     elements.exerciseNameInput.value = name;
@@ -863,15 +881,14 @@
       const lastExercise = await FitnessDB.getLastExerciseByName(name);
       const exerciseDefaults = ExerciseDB.EXERCISES.find(e => e.name === name);
       if (lastExercise) {
-        // Auto-fill weight, reps, sets
         elements.weightInput.value = lastExercise.weight || 0;
         elements.repsInput.value = lastExercise.reps || exerciseDefaults?.defaultReps || 10;
         elements.setsInput.value = 1;
+        if (lastExercise.notes) elements.notesInput.value = lastExercise.notes;
 
-        // Auto-fill notes
-        if (lastExercise.notes) {
-          elements.notesInput.value = lastExercise.notes;
-        }
+        // Pre-populate muscles for custom exercises
+        const isPredefined = ExerciseDB.getMuscleGroups(name).length > 0;
+        if (!isPredefined) populateSavedMuscles(lastExercise.muscles);
       } else if (exerciseDefaults?.defaultReps) {
         elements.repsInput.value = exerciseDefaults.defaultReps;
       }
