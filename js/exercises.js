@@ -114,6 +114,9 @@ const EXERCISES = [
   { name: 'Dead Bug', muscles: ['core'] },
   { name: 'Bird Dog', muscles: ['core'] },
 
+  // Mobility / Rehab
+  { name: 'Wall Slides', muscles: ['shoulders', 'back', 'core'] },
+
   // Compound/Full Body
   { name: 'Clean and Press', muscles: ['shoulders', 'back', 'quads', 'core'] },
   { name: 'Kettlebell Swing', muscles: ['glutes', 'hamstrings', 'core', 'shoulders'] },
