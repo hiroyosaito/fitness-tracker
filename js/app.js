@@ -421,7 +421,6 @@
           const lastExercise = await FitnessDB.getLastExerciseByName(name);
           if (lastExercise) {
             prefillSetsFromEntry(elements.setsContainer, lastExercise, name);
-            if (lastExercise.notes) elements.notesInput.value = lastExercise.notes;
             const isPredefined = ExerciseDB.getMuscleGroups(name).length > 0;
             if (!isPredefined) populateSavedMuscles(lastExercise.muscles);
           }
@@ -981,7 +980,6 @@
       const exerciseDefaults = ExerciseDB.EXERCISES.find(e => e.name === name);
       if (lastExercise) {
         prefillSetsFromEntry(elements.setsContainer, lastExercise, name);
-        if (lastExercise.notes) elements.notesInput.value = lastExercise.notes;
         const isPredefined = ExerciseDB.getMuscleGroups(name).length > 0;
         if (!isPredefined) populateSavedMuscles(lastExercise.muscles);
       } else if (exerciseDefaults?.defaultReps) {
