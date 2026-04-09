@@ -1471,9 +1471,14 @@
   }
 
   // Handle adding a set to an exercise
-  async function handleAddSet(id, currentSets) {
+  async function handleAddSet(id, currentSets, currentSetDetails) {
     try {
-      await FitnessDB.updateExercise(id, { sets: currentSets + 1 });
+      const updates = { sets: currentSets + 1 };
+      if (currentSetDetails && currentSetDetails.length > 0) {
+        const lastSet = currentSetDetails[currentSetDetails.length - 1];
+        updates.set_details = JSON.stringify([...currentSetDetails, { weight: lastSet.weight, reps: lastSet.reps }]);
+      }
+      await FitnessDB.updateExercise(id, updates);
       UI.showToast('+1 Set');
       await loadAllData();
     } catch (error) {

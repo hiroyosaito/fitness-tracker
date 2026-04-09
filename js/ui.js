@@ -107,7 +107,7 @@ const UI = {
       title: 'Add Set',
       onClick: () => {
         if (window.handleAddSet) {
-          window.handleAddSet(exercise.id, exercise.sets);
+          window.handleAddSet(exercise.id, exercise.sets, exercise.set_details);
         }
       }
     });
