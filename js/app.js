@@ -949,7 +949,10 @@
     if (lastExercise.set_details && lastExercise.set_details.length > 0) {
       lastExercise.set_details.forEach(s => buildSetRow(container, s.weight, s.reps));
     } else {
-      buildSetRow(container, lastExercise.weight || 0, lastExercise.reps || defaultReps);
+      const setCount = lastExercise.sets || 1;
+      for (let i = 0; i < setCount; i++) {
+        buildSetRow(container, lastExercise.weight || 0, lastExercise.reps || defaultReps);
+      }
     }
   }
 
