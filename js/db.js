@@ -97,23 +97,6 @@ async function requestPasswordReset(email) {
   }
 }
 
-// Change password for the currently logged-in user
-async function changePassword(newPassword) {
-  const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-    method: 'PUT',
-    headers: {
-      'apikey': SUPABASE_ANON_KEY,
-      'Authorization': `Bearer ${getAuthToken()}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ password: newPassword })
-  });
-  if (!response.ok) {
-    const data = await response.json().catch(() => ({}));
-    throw new Error(data.error_description || data.msg || data.message || 'Failed to change password');
-  }
-}
-
 // Update password using a recovery access token
 async function updatePassword(newPassword, accessToken) {
   const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
@@ -515,7 +498,6 @@ window.FitnessDB = {
   getRecoveryToken,
   requestPasswordReset,
   updatePassword,
-  changePassword,
   restoreSession,
   getCurrentUserId
 };
