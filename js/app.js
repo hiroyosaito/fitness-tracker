@@ -1037,8 +1037,24 @@
     };
 
     try {
-      await FitnessDB.addExercise(exercise);
-      UI.showToast('Exercise added!');
+      // If the same exercise already exists for this date, append sets to it
+      const todayEntries = await FitnessDB.getExercisesByDate(currentDate);
+      const existing = todayEntries.find(e => e.type === 'strength' && e.name.toLowerCase() === name.toLowerCase());
+
+      if (existing) {
+        const mergedSets = [...(existing.set_details || []), ...setDetails];
+        const newMaxWeight = Math.max(...mergedSets.map(s => s.weight));
+        await FitnessDB.updateExercise(existing.id, {
+          set_details: JSON.stringify(mergedSets),
+          sets: mergedSets.length,
+          weight: newMaxWeight,
+          timestamp: Date.now()
+        });
+        UI.showToast('Set added to existing exercise!');
+      } else {
+        await FitnessDB.addExercise(exercise);
+        UI.showToast('Exercise added!');
+      }
       resetForm();
       historyLoaded = false;
       await Promise.all([loadAllData(), loadUserExerciseNames(), updateStreak()]);
