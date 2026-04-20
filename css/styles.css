@@ -523,7 +523,14 @@ body {
   color: white;
 }
 
-.btn-icon.delete:hover {
+.btn-icon.delete,
+.btn-icon.remove-set {
+  font-size: 1.4rem;
+  color: var(--text-primary);
+}
+
+.btn-icon.delete:hover,
+.btn-icon.remove-set:hover {
   background: var(--accent);
   color: white;
 }
@@ -904,8 +911,8 @@ body {
 
 .set-row input.set-weight,
 .set-row input.set-reps {
-  width: 56px;
-  padding: 8px 4px;
+  width: 48px;
+  padding: 8px 2px;
   text-align: center;
 }
 
