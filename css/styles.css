@@ -497,14 +497,15 @@ body {
   background: var(--bg-tertiary);
   border: none;
   color: var(--text-secondary);
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   border-radius: var(--radius-sm);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
+  font-size: 1.1rem;
 }
 
 .btn-icon:hover {
