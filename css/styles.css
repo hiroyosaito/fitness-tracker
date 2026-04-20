@@ -886,7 +886,7 @@ body {
 .set-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 5px;
   margin-bottom: 8px;
 }
 
@@ -904,8 +904,8 @@ body {
 
 .set-row input.set-weight,
 .set-row input.set-reps {
-  width: 70px;
-  padding: 8px;
+  width: 56px;
+  padding: 8px 4px;
   text-align: center;
 }
 
