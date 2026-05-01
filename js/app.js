@@ -1925,11 +1925,11 @@
     UI.$('daily-goal-exercise').value = goal.exercise_name;
     UI.$('daily-goal-cutoff').value = goal.cutoff_time;
     updateDailyTargetFields(goal.exercise_name);
-    if (goal.target_sets) {
+    UI.$('daily-target-sets').value = goal.target_sets || '';
+    UI.$('daily-target-reps').value = goal.target_reps || '';
+    if (goal.target_sets || goal.target_reps) {
       UI.$('daily-target-sets-group').style.display = 'block';
-      UI.$('daily-target-sets').value = goal.target_sets;
     }
-    if (goal.target_reps) UI.$('daily-target-reps').value = goal.target_reps;
     if (goal.target_minutes) {
       UI.$('daily-target-mins-group').style.display = 'block';
       UI.$('daily-target-mins').value = goal.target_minutes;
