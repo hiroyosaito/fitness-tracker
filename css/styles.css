@@ -1143,10 +1143,6 @@ button.goals-accordion-header:hover {
   padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
 }
 
-.goals-accordion-body .add-form {
-  background: var(--bg-tertiary);
-  margin-bottom: var(--spacing-md);
-}
 
 .accordion-right {
   display: flex;
@@ -1165,6 +1161,39 @@ button.goals-accordion-header:hover {
   color: var(--text-muted);
   transition: transform 0.2s ease;
   line-height: 1;
+}
+
+/* Compact add form trigger */
+.btn-add-inline {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: var(--spacing-xs) 0;
+  display: block;
+  transition: opacity 0.15s;
+}
+
+.btn-add-inline:hover {
+  opacity: 0.75;
+}
+
+#daily-add-form-wrapper {
+  margin-top: var(--spacing-sm);
+  padding-top: var(--spacing-sm);
+  border-top: 1px solid var(--border);
+}
+
+#daily-goal-fields {
+  margin-top: var(--spacing-sm);
+}
+
+#weekly-goal-fields {
+  margin-top: var(--spacing-sm);
+  padding-top: var(--spacing-sm);
+  border-top: 1px solid var(--border);
 }
 
 /* Input with unit label */

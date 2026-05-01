@@ -701,6 +701,21 @@
       UI.$('weekly-goals-toggle').setAttribute('aria-expanded', String(!isOpen));
     });
 
+    // Goals add form reveal triggers
+    UI.$('daily-goal-trigger').addEventListener('click', () => {
+      const fields = UI.$('daily-goal-fields');
+      const isOpen = fields.style.display !== 'none';
+      fields.style.display = isOpen ? 'none' : 'block';
+      if (!isOpen) UI.$('daily-goal-exercise').focus();
+    });
+
+    UI.$('weekly-goal-trigger').addEventListener('click', () => {
+      const fields = UI.$('weekly-goal-fields');
+      const isOpen = fields.style.display !== 'none';
+      fields.style.display = isOpen ? 'none' : 'block';
+      if (!isOpen) UI.$('goal-exercise').focus();
+    });
+
     // Edit modal
     UI.$('edit-cancel-btn').addEventListener('click', closeEditModal);
     UI.$('edit-form').addEventListener('submit', handleEditSave);
@@ -1703,6 +1718,7 @@
 
       const planEmptyState = UI.$('daily-plan-empty-state');
       const btn = UI.$('add-daily-goal-btn');
+      const formWrapper = UI.$('daily-add-form-wrapper');
 
       renderPlanTomorrow(tomorrowGoals);
 
@@ -1713,13 +1729,17 @@
       if (planningMode) {
         dailyTargetDate = tomorrow;
         btn.textContent = 'Add for Tomorrow';
+        UI.$('daily-goal-trigger').textContent = '+ Add for tomorrow';
         const planBody = UI.$('plan-tomorrow-body');
+        planBody.appendChild(formWrapper);
         planBody.style.display = 'block';
         UI.$('plan-tomorrow-chevron').style.transform = 'rotate(90deg)';
         UI.$('plan-tomorrow-toggle').setAttribute('aria-expanded', 'true');
       } else {
         dailyTargetDate = today;
         btn.textContent = 'Add to Today';
+        UI.$('daily-goal-trigger').textContent = '+ Add exercise';
+        UI.$('today-goals-body').appendChild(formWrapper);
       }
     } catch (err) {
       console.error('Failed to load daily goals:', err);
@@ -1888,6 +1908,7 @@
       UI.$('daily-target-mins').value = '';
       UI.$('daily-target-sets-group').style.display = 'none';
       UI.$('daily-target-mins-group').style.display = 'none';
+      UI.$('daily-goal-fields').style.display = 'none';
       await loadDailyGoals();
     } catch (err) {
       console.error('Failed to add daily goal:', err);
@@ -2057,6 +2078,7 @@
       await FitnessDB.addWeeklyGoal(name, targetDays, weekStart);
       nameInput.value = '';
       daysSelect.value = '3';
+      UI.$('weekly-goal-fields').style.display = 'none';
       await loadGoals();
     } catch (err) {
       console.error('Failed to add goal:', err);

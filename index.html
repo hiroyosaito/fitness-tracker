@@ -280,9 +280,39 @@
           <div class="goals-accordion-header goals-accordion-static">
             <h2 class="goals-section-heading">Today's Goals</h2>
           </div>
-          <div class="goals-accordion-body">
+          <div class="goals-accordion-body" id="today-goals-body">
             <div id="daily-goals-list"></div>
             <p id="daily-goals-empty-state" class="empty-state">No goals set for today.</p>
+            <!-- Shared add form — JS moves this into Plan Tomorrow body in planning mode -->
+            <div id="daily-add-form-wrapper">
+              <button type="button" id="daily-goal-trigger" class="btn-add-inline">+ Add exercise</button>
+              <div id="daily-goal-fields" style="display:none;">
+                <div class="form-row" style="grid-template-columns: 2fr 1fr;">
+                  <div class="form-group" style="margin-bottom:0;">
+                    <label for="daily-goal-exercise">Exercise</label>
+                    <input type="text" id="daily-goal-exercise" placeholder="e.g. Squats..." autocomplete="off">
+                    <ul id="daily-goal-suggestions" class="suggestions"></ul>
+                  </div>
+                  <div class="form-group" style="margin-bottom:0;">
+                    <label for="daily-goal-cutoff">By</label>
+                    <input type="time" id="daily-goal-cutoff" value="21:00">
+                  </div>
+                </div>
+                <div id="daily-target-sets-group" style="display:none; margin-top:var(--spacing-sm);">
+                  <div class="input-with-unit">
+                    <input type="number" id="daily-target-sets" class="daily-target-input" placeholder="Target sets (optional)" min="1">
+                    <span class="input-unit-label">sets</span>
+                  </div>
+                </div>
+                <div id="daily-target-mins-group" style="display:none; margin-top:var(--spacing-sm);">
+                  <div class="input-with-unit">
+                    <input type="number" id="daily-target-mins" class="daily-target-input" placeholder="Target minutes (optional)" min="1">
+                    <span class="input-unit-label">min</span>
+                  </div>
+                </div>
+                <button type="button" id="add-daily-goal-btn" class="btn-primary" style="margin-top:var(--spacing-md); width:100%;">Add to Today</button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -298,35 +328,8 @@
           <div class="goals-accordion-body" id="plan-tomorrow-body" style="display:none;">
             <div id="daily-plan-list"></div>
             <p id="daily-plan-empty-state" class="empty-state" style="display:none;">Plan tomorrow's workout tonight to wake up ready 💪</p>
+            <!-- daily-add-form-wrapper is appended here by JS when in planning mode -->
           </div>
-        </div>
-
-        <!-- Add form (adds to today or tomorrow based on mode) -->
-        <div class="add-form" style="margin-top:var(--spacing-md);">
-          <div class="form-row" style="grid-template-columns: 2fr 1fr;">
-            <div class="form-group" style="margin-bottom:0;">
-              <label for="daily-goal-exercise">Exercise</label>
-              <input type="text" id="daily-goal-exercise" placeholder="e.g. Squats..." autocomplete="off">
-              <ul id="daily-goal-suggestions" class="suggestions"></ul>
-            </div>
-            <div class="form-group" style="margin-bottom:0;">
-              <label for="daily-goal-cutoff">By</label>
-              <input type="time" id="daily-goal-cutoff" value="21:00">
-            </div>
-          </div>
-          <div id="daily-target-sets-group" style="display:none; margin-top:var(--spacing-sm);">
-            <div class="input-with-unit">
-              <input type="number" id="daily-target-sets" class="daily-target-input" placeholder="Target sets (optional)" min="1">
-              <span class="input-unit-label">sets</span>
-            </div>
-          </div>
-          <div id="daily-target-mins-group" style="display:none; margin-top:var(--spacing-sm);">
-            <div class="input-with-unit">
-              <input type="number" id="daily-target-mins" class="daily-target-input" placeholder="Target minutes (optional)" min="1">
-              <span class="input-unit-label">min</span>
-            </div>
-          </div>
-          <button type="button" id="add-daily-goal-btn" class="btn-primary" style="margin-top:var(--spacing-md);">Add to Today</button>
         </div>
 
         <!-- Weekly Goals (collapsible) -->
@@ -339,7 +342,10 @@
             </div>
           </button>
           <div class="goals-accordion-body" id="weekly-goals-body" style="display:none;">
-            <div class="add-form">
+            <div id="goals-list"></div>
+            <p id="goals-empty-state" class="empty-state">No goals set for this week.</p>
+            <button type="button" id="weekly-goal-trigger" class="btn-add-inline">+ Add weekly goal</button>
+            <div id="weekly-goal-fields" style="display:none;">
               <div class="form-group">
                 <label for="goal-exercise">Exercise Name</label>
                 <input type="text" id="goal-exercise" placeholder="e.g. Squats, Running..." autocomplete="off">
@@ -357,10 +363,8 @@
                   <option value="7">7 days</option>
                 </select>
               </div>
-              <button type="button" id="add-goal-btn" class="btn-primary">Add Goal</button>
+              <button type="button" id="add-goal-btn" class="btn-primary" style="width:100%;">Add Goal</button>
             </div>
-            <div id="goals-list"></div>
-            <p id="goals-empty-state" class="empty-state">No goals set for this week. Add one above!</p>
           </div>
         </div>
 
