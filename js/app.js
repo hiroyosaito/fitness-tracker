@@ -48,6 +48,7 @@
   let reportPeriod = 'week';
   let exerciseDropdownLoaded = false;
   let historyLoaded = false;
+  let goalsLoaded = false;
 
   // Handle login screen
   async function setupAuth() {
@@ -601,6 +602,9 @@
 
     // Database check button
     UI.$('check-db-btn').addEventListener('click', checkDatabase);
+
+    // Weekly goals
+    UI.$('add-goal-btn').addEventListener('click', handleAddGoal);
 
     // Edit modal
     UI.$('edit-cancel-btn').addEventListener('click', closeEditModal);
@@ -1526,6 +1530,132 @@
     }
   }
 
+  // Return the Monday and Sunday of the current week, plus days elapsed since Monday
+  function getWeekBounds() {
+    const today = new Date();
+    const day = today.getDay(); // 0=Sun, 1=Mon, …, 6=Sat
+    const daysFromMonday = day === 0 ? 6 : day - 1;
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - daysFromMonday);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    return { weekStart: fmt(monday), weekEnd: fmt(sunday), daysFromMonday };
+  }
+
+  async function loadGoals() {
+    const { weekStart, weekEnd, daysFromMonday } = getWeekBounds();
+    const daysRemaining = 7 - daysFromMonday; // includes today
+
+    UI.$('goals-list').innerHTML = '<p class="empty-state" style="padding:var(--spacing-md)">Loading...</p>';
+    UI.$('goals-empty-state').style.display = 'none';
+
+    try {
+      const [goals, exerciseCounts] = await Promise.all([
+        FitnessDB.getWeeklyGoals(weekStart),
+        FitnessDB.getWeekExerciseCounts(weekStart, weekEnd)
+      ]);
+      renderGoals(goals, exerciseCounts, daysRemaining, weekStart);
+    } catch (err) {
+      console.error('Failed to load goals:', err);
+      UI.$('goals-list').innerHTML = '<p class="empty-state">Failed to load goals.</p>';
+    }
+  }
+
+  function renderGoals(goals, exerciseCounts, daysRemaining, weekStart) {
+    const list = UI.$('goals-list');
+    const emptyState = UI.$('goals-empty-state');
+    list.innerHTML = '';
+
+    if (goals.length === 0) {
+      emptyState.style.display = 'block';
+      return;
+    }
+    emptyState.style.display = 'none';
+
+    goals.forEach(goal => {
+      const count = exerciseCounts[goal.exercise_name.toLowerCase()] || 0;
+      const sessionsRemaining = goal.target_days - count;
+      const completed = count >= goal.target_days;
+      const pct = Math.min(100, Math.round((count / goal.target_days) * 100));
+
+      let message = '';
+      let messageType = '';
+      if (completed) {
+        const spare = daysRemaining - 1;
+        message = spare > 0
+          ? `You hit your ${goal.exercise_name} goal for the week — with ${spare} day${spare !== 1 ? 's' : ''} to spare!`
+          : `You hit your ${goal.exercise_name} goal for the week!`;
+        messageType = 'goal-message-success';
+      } else if (sessionsRemaining > 0 && sessionsRemaining >= daysRemaining) {
+        message = `You need ${sessionsRemaining} more ${goal.exercise_name} session${sessionsRemaining !== 1 ? 's' : ''} but only have ${daysRemaining} day${daysRemaining !== 1 ? 's' : ''} left — don't let it slip!`;
+        messageType = 'goal-message-warning';
+      }
+
+      const card = UI.createElement('div', { className: 'goal-card' + (completed ? ' goal-completed' : '') });
+
+      const header = UI.createElement('div', { className: 'goal-header' }, [
+        UI.createElement('div', { className: 'goal-name', textContent: goal.exercise_name }),
+        UI.createElement('button', {
+          className: 'btn-icon delete',
+          innerHTML: '×',
+          title: 'Remove goal',
+          onClick: async () => {
+            await FitnessDB.deleteWeeklyGoal(goal.id);
+            await loadGoals();
+          }
+        })
+      ]);
+
+      const progressRow = UI.createElement('div', { className: 'goal-progress-row' }, [
+        UI.createElement('span', { className: 'goal-count', textContent: `${count} / ${goal.target_days} day${goal.target_days !== 1 ? 's' : ''}` })
+      ]);
+
+      const barTrack = UI.createElement('div', { className: 'goal-bar-track' }, [
+        UI.createElement('div', { className: 'goal-bar-fill', style: { width: pct + '%' } })
+      ]);
+
+      const children = [header, progressRow, barTrack];
+
+      if (message) {
+        children.push(UI.createElement('div', { className: `goal-message ${messageType}`, textContent: message }));
+      }
+
+      children.forEach(c => card.appendChild(c));
+      list.appendChild(card);
+    });
+  }
+
+  async function handleAddGoal() {
+    const nameInput = UI.$('goal-exercise');
+    const daysSelect = UI.$('goal-days');
+    const name = nameInput.value.trim();
+    if (!name) {
+      UI.showToast('Enter an exercise name', 'error');
+      nameInput.focus();
+      return;
+    }
+    const targetDays = parseInt(daysSelect.value);
+    const { weekStart } = getWeekBounds();
+
+    const btn = UI.$('add-goal-btn');
+    btn.disabled = true;
+    btn.textContent = 'Adding...';
+
+    try {
+      await FitnessDB.addWeeklyGoal(name, targetDays, weekStart);
+      nameInput.value = '';
+      daysSelect.value = '3';
+      await loadGoals();
+    } catch (err) {
+      console.error('Failed to add goal:', err);
+      UI.showToast('Failed to add goal', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Add Goal';
+    }
+  }
+
   // Switch tabs
   function switchTab(tabName) {
     // Update tab buttons
@@ -1541,6 +1671,11 @@
     // Lazy-load history on first open
     if (tabName === 'history' && !historyLoaded) {
       loadHistory();
+    }
+
+    // Reload goals each time (needs fresh exercise counts)
+    if (tabName === 'goals') {
+      loadGoals();
     }
   }
 

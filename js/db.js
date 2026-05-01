@@ -193,6 +193,53 @@ function initDB() {
   return Promise.resolve();
 }
 
+// --- Weekly Goals ---
+
+async function addWeeklyGoal(exerciseName, targetDays, weekStart) {
+  const entry = {
+    user_id: getCurrentUserId(),
+    exercise_name: exerciseName,
+    target_days: targetDays,
+    week_start: weekStart,
+    created_at: Date.now()
+  };
+  const result = await supabaseRequest('weekly_goals', {
+    method: 'POST',
+    body: JSON.stringify(entry)
+  });
+  return result[0];
+}
+
+async function getWeeklyGoals(weekStart) {
+  const userId = getCurrentUserId();
+  return await supabaseRequest(
+    `weekly_goals?user_id=eq.${userId}&week_start=eq.${weekStart}&order=created_at.asc`
+  );
+}
+
+async function deleteWeeklyGoal(id) {
+  await supabaseRequest(`weekly_goals?id=eq.${id}`, {
+    method: 'DELETE',
+    prefer: 'return=minimal'
+  });
+}
+
+async function getWeekExerciseCounts(weekStart, weekEnd) {
+  const userId = getCurrentUserId();
+  const result = await supabaseRequest(
+    `exercises?user_id=eq.${userId}&date=gte.${weekStart}&date=lte.${weekEnd}&select=name,date`
+  );
+  const datesByName = {};
+  result.forEach(r => {
+    const key = r.name.toLowerCase();
+    if (!datesByName[key]) datesByName[key] = new Set();
+    datesByName[key].add(r.date);
+  });
+  const counts = {};
+  Object.entries(datesByName).forEach(([name, dates]) => { counts[name] = dates.size; });
+  return counts;
+}
+
 // Add a new exercise entry
 async function addExercise(exercise) {
   const entry = {
@@ -490,6 +537,10 @@ window.FitnessDB = {
   getCardioCompanionNames,
   migrateCardioColumns,
   getLastExerciseByName,
+  addWeeklyGoal,
+  getWeeklyGoals,
+  deleteWeeklyGoal,
+  getWeekExerciseCounts,
   signUp,
   signIn,
   signOut,

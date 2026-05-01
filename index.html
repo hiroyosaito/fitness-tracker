@@ -99,6 +99,7 @@
       <button class="tab" data-tab="classes">Classes</button>
       <button class="tab" data-tab="history">History</button>
       <button class="tab" data-tab="reports">Reports</button>
+      <button class="tab" data-tab="goals">Goals</button>
     </nav>
 
     <!-- Main Content -->
@@ -272,6 +273,35 @@
       <section id="history-section" class="section">
         <div id="history-list" class="history-list"></div>
         <p id="history-empty-state" class="empty-state" style="display:none;">No workout history yet.</p>
+      </section>
+
+      <!-- Weekly Goals Section -->
+      <section id="goals-section" class="section">
+        <div class="add-form">
+          <div class="form-group">
+            <label for="goal-exercise">Exercise Name</label>
+            <input type="text" id="goal-exercise" placeholder="e.g. Squats, Running..." autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label for="goal-days">Days per week</label>
+            <select id="goal-days">
+              <option value="1">1 day</option>
+              <option value="2">2 days</option>
+              <option value="3" selected>3 days</option>
+              <option value="4">4 days</option>
+              <option value="5">5 days</option>
+              <option value="6">6 days</option>
+              <option value="7">7 days</option>
+            </select>
+          </div>
+          <button type="button" id="add-goal-btn" class="btn-primary">Add Goal</button>
+        </div>
+
+        <div class="workout-log">
+          <h2>This Week's Goals</h2>
+          <div id="goals-list"></div>
+          <p id="goals-empty-state" class="empty-state">No goals set for this week. Add one above!</p>
+        </div>
       </section>
 
       <!-- Reports Section -->
