@@ -609,11 +609,22 @@
     const goalExerciseInput = UI.$('goal-exercise');
     const goalSuggestions = UI.$('goal-exercise-suggestions');
 
-    goalExerciseInput.addEventListener('input', () => {
-      const q = goalExerciseInput.value.trim().toLowerCase();
+    const STANDARD_CARDIO = ['Walking', 'Biking', 'Swimming', 'Running', 'Elliptical', 'Stairmaster', 'Rowing'];
+
+    function getAllGoalNames() {
+      return [...new Set([
+        ...cachedUserExerciseNames,
+        ...STANDARD_CARDIO,
+        ...cachedCustomCardioNames,
+        ...cachedClassNames
+      ])].sort();
+    }
+
+    function showGoalSuggestions(q) {
+      const all = getAllGoalNames();
       const matches = q
-        ? cachedUserExerciseNames.filter(n => n.toLowerCase().includes(q))
-        : cachedUserExerciseNames;
+        ? all.filter(n => n.toLowerCase().includes(q.toLowerCase()))
+        : all;
       goalSuggestions.innerHTML = '';
       if (matches.length === 0) { goalSuggestions.classList.remove('active'); return; }
       matches.slice(0, 8).forEach((name, i) => {
@@ -628,26 +639,10 @@
         goalSuggestions.appendChild(li);
       });
       goalSuggestions.classList.add('active');
-    });
+    }
 
-    goalExerciseInput.addEventListener('focus', () => {
-      if (!goalExerciseInput.value.trim() && cachedUserExerciseNames.length > 0) {
-        goalSuggestions.innerHTML = '';
-        cachedUserExerciseNames.slice(0, 8).forEach((name, i) => {
-          const li = UI.createElement('li', {
-            textContent: name,
-            onClick: () => {
-              goalExerciseInput.value = name;
-              goalSuggestions.classList.remove('active');
-            }
-          });
-          if (i === 0) li.classList.add('selected');
-          goalSuggestions.appendChild(li);
-        });
-        goalSuggestions.classList.add('active');
-      }
-    });
-
+    goalExerciseInput.addEventListener('input', () => showGoalSuggestions(goalExerciseInput.value.trim()));
+    goalExerciseInput.addEventListener('focus', () => showGoalSuggestions(goalExerciseInput.value.trim()));
     goalExerciseInput.addEventListener('blur', () => {
       setTimeout(() => goalSuggestions.classList.remove('active'), 200);
     });
