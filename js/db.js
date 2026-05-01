@@ -250,7 +250,7 @@ async function getWeekExerciseCounts(weekStart, weekEnd) {
 
 // --- Daily Goals ---
 
-async function addDailyGoal(exerciseName, targetDate, cutoffTime, targetSets, targetMinutes) {
+async function addDailyGoal(exerciseName, targetDate, cutoffTime, targetSets, targetMinutes, targetReps) {
   const entry = {
     user_id: getCurrentUserId(),
     exercise_name: exerciseName,
@@ -260,6 +260,7 @@ async function addDailyGoal(exerciseName, targetDate, cutoffTime, targetSets, ta
   };
   if (targetSets) entry.target_sets = targetSets;
   if (targetMinutes) entry.target_minutes = targetMinutes;
+  if (targetReps) entry.target_reps = targetReps;
   const result = await supabaseRequest('daily_goals', {
     method: 'POST',
     body: JSON.stringify(entry)

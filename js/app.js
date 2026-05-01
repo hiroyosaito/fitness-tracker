@@ -1683,7 +1683,7 @@
     const minsGroup = UI.$('daily-target-mins-group');
     const showSets = type === 'strength' || type === 'unknown';
     const showMins = type === 'cardio' || type === 'unknown';
-    if (!showSets) UI.$('daily-target-sets').value = '';
+    if (!showSets) { UI.$('daily-target-sets').value = ''; UI.$('daily-target-reps').value = ''; }
     if (!showMins) UI.$('daily-target-mins').value = '';
     setsGroup.style.display = showSets ? 'block' : 'none';
     minsGroup.style.display = showMins ? 'block' : 'none';
@@ -1766,6 +1766,9 @@
         }
       });
       card.appendChild(UI.createElement('div', { className: 'goal-header' }, [checkRow, deleteBtn]));
+      if (goal.target_reps) {
+        card.appendChild(UI.createElement('div', { className: 'goal-reps-hint', textContent: `aim for ${goal.target_reps} reps per set` }));
+      }
       if (goal.target_sets || goal.target_minutes) {
         const targetText = goal.target_sets ? `Target: ${goal.target_sets} sets` : `Target: ${goal.target_minutes} min`;
         card.appendChild(UI.createElement('div', { className: 'daily-goal-progress-text', textContent: targetText }));
@@ -1816,6 +1819,10 @@
       });
 
       card.appendChild(UI.createElement('div', { className: 'goal-header' }, [checkRow, deleteBtn]));
+
+      if (goal.target_reps) {
+        card.appendChild(UI.createElement('div', { className: 'goal-reps-hint', textContent: `aim for ${goal.target_reps} reps per set` }));
+      }
 
       // Progress bar for goals with a target
       if (goal.target_sets || goal.target_minutes) {
@@ -1893,8 +1900,10 @@
 
     const setsVal = UI.$('daily-target-sets').value;
     const minsVal = UI.$('daily-target-mins').value;
+    const repsVal = UI.$('daily-target-reps').value;
     const targetSets = setsVal ? parseInt(setsVal) : null;
     const targetMins = minsVal ? parseInt(minsVal) : null;
+    const targetReps = repsVal ? parseInt(repsVal) : null;
 
     const btn = UI.$('add-daily-goal-btn');
     const originalLabel = btn.textContent;
@@ -1902,10 +1911,11 @@
     btn.textContent = 'Adding...';
 
     try {
-      await FitnessDB.addDailyGoal(name, targetDate, cutoffTime, targetSets, targetMins);
+      await FitnessDB.addDailyGoal(name, targetDate, cutoffTime, targetSets, targetMins, targetReps);
       nameInput.value = '';
       UI.$('daily-target-sets').value = '';
       UI.$('daily-target-mins').value = '';
+      UI.$('daily-target-reps').value = '';
       UI.$('daily-target-sets-group').style.display = 'none';
       UI.$('daily-target-mins-group').style.display = 'none';
       UI.$('daily-goal-fields').style.display = 'none';

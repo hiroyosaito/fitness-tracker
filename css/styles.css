@@ -1196,6 +1196,27 @@ button.goals-accordion-header:hover {
   border-top: 1px solid var(--border);
 }
 
+/* Sets × reps inline row in goal form */
+.sets-reps-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.sets-reps-row .daily-target-input {
+  width: 64px;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+/* Reps reminder on goal card */
+.goal-reps-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  padding: 2px 0 var(--spacing-xs) calc(1.25rem + var(--spacing-sm));
+}
+
 /* Input with unit label */
 .input-with-unit {
   display: flex;
