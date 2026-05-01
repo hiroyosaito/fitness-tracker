@@ -1935,7 +1935,6 @@
       UI.$('daily-target-mins').value = goal.target_minutes;
     }
     UI.$('add-daily-goal-btn').textContent = 'Save Changes';
-    UI.$('daily-goal-exercise').focus();
   }
 
   async function handleAddDailyGoal() {
