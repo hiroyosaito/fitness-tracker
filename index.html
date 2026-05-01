@@ -278,17 +278,33 @@
       <!-- Goals Section -->
       <section id="goals-section" class="section active">
 
-        <!-- Daily Goals -->
-        <h2 class="goals-section-heading">Today's Goals</h2>
-        <div id="daily-goals-list"></div>
-        <p id="daily-goals-empty-state" class="empty-state">No goals set for today.</p>
+        <!-- Today's Goals (always expanded) -->
+        <div class="goals-accordion-section">
+          <div class="goals-accordion-header goals-accordion-static">
+            <h2 class="goals-section-heading">Today's Goals</h2>
+          </div>
+          <div class="goals-accordion-body">
+            <div id="daily-goals-list"></div>
+            <p id="daily-goals-empty-state" class="empty-state">No goals set for today.</p>
+          </div>
+        </div>
 
-        <!-- Plan Tomorrow (shown conditionally) -->
-        <h2 id="daily-form-heading" class="goals-section-heading plan-tomorrow-heading" style="display:none;">Plan Tomorrow</h2>
-        <div id="daily-plan-list"></div>
-        <p id="daily-plan-empty-state" class="empty-state" style="display:none;">Nothing planned for tomorrow yet.</p>
+        <!-- Plan Tomorrow (collapsible, auto-expands after 6 PM) -->
+        <div class="goals-accordion-section">
+          <button class="goals-accordion-header" id="plan-tomorrow-toggle" aria-expanded="false">
+            <h2 class="goals-section-heading">Plan Tomorrow</h2>
+            <div class="accordion-right">
+              <span class="accordion-summary" id="plan-tomorrow-summary"></span>
+              <span class="accordion-chevron" id="plan-tomorrow-chevron">›</span>
+            </div>
+          </button>
+          <div class="goals-accordion-body" id="plan-tomorrow-body" style="display:none;">
+            <div id="daily-plan-list"></div>
+            <p id="daily-plan-empty-state" class="empty-state" style="display:none;">Plan tomorrow's workout tonight to wake up ready 💪</p>
+          </div>
+        </div>
 
-        <!-- Add form (target date switches between today / tomorrow) -->
+        <!-- Add form (adds to today or tomorrow based on mode) -->
         <div class="add-form" style="margin-top:var(--spacing-md);">
           <div class="form-row" style="grid-template-columns: 2fr 1fr;">
             <div class="form-group" style="margin-bottom:0;">
@@ -302,38 +318,54 @@
             </div>
           </div>
           <div id="daily-target-sets-group" style="display:none; margin-top:var(--spacing-sm);">
-            <input type="number" id="daily-target-sets" class="daily-target-input" placeholder="Target sets (optional)" min="1">
+            <div class="input-with-unit">
+              <input type="number" id="daily-target-sets" class="daily-target-input" placeholder="Target sets (optional)" min="1">
+              <span class="input-unit-label">sets</span>
+            </div>
           </div>
           <div id="daily-target-mins-group" style="display:none; margin-top:var(--spacing-sm);">
-            <input type="number" id="daily-target-mins" class="daily-target-input" placeholder="Target minutes (optional)" min="1">
+            <div class="input-with-unit">
+              <input type="number" id="daily-target-mins" class="daily-target-input" placeholder="Target minutes (optional)" min="1">
+              <span class="input-unit-label">min</span>
+            </div>
           </div>
           <button type="button" id="add-daily-goal-btn" class="btn-primary" style="margin-top:var(--spacing-md);">Add to Today</button>
         </div>
 
-        <!-- Weekly Goals -->
-        <h2 class="goals-section-heading" style="margin-top:var(--spacing-lg);">Weekly Goals</h2>
-        <div class="add-form">
-          <div class="form-group">
-            <label for="goal-exercise">Exercise Name</label>
-            <input type="text" id="goal-exercise" placeholder="e.g. Squats, Running..." autocomplete="off">
-            <ul id="goal-exercise-suggestions" class="suggestions"></ul>
+        <!-- Weekly Goals (collapsible) -->
+        <div class="goals-accordion-section" style="margin-top:var(--spacing-md);">
+          <button class="goals-accordion-header" id="weekly-goals-toggle" aria-expanded="false">
+            <h2 class="goals-section-heading">Weekly Goals</h2>
+            <div class="accordion-right">
+              <span class="accordion-summary" id="weekly-goals-summary"></span>
+              <span class="accordion-chevron" id="weekly-goals-chevron">›</span>
+            </div>
+          </button>
+          <div class="goals-accordion-body" id="weekly-goals-body" style="display:none;">
+            <div class="add-form">
+              <div class="form-group">
+                <label for="goal-exercise">Exercise Name</label>
+                <input type="text" id="goal-exercise" placeholder="e.g. Squats, Running..." autocomplete="off">
+                <ul id="goal-exercise-suggestions" class="suggestions"></ul>
+              </div>
+              <div class="form-group">
+                <label for="goal-days">Days per week</label>
+                <select id="goal-days">
+                  <option value="1">1 day</option>
+                  <option value="2">2 days</option>
+                  <option value="3" selected>3 days</option>
+                  <option value="4">4 days</option>
+                  <option value="5">5 days</option>
+                  <option value="6">6 days</option>
+                  <option value="7">7 days</option>
+                </select>
+              </div>
+              <button type="button" id="add-goal-btn" class="btn-primary">Add Goal</button>
+            </div>
+            <div id="goals-list"></div>
+            <p id="goals-empty-state" class="empty-state">No goals set for this week. Add one above!</p>
           </div>
-          <div class="form-group">
-            <label for="goal-days">Days per week</label>
-            <select id="goal-days">
-              <option value="1">1 day</option>
-              <option value="2">2 days</option>
-              <option value="3" selected>3 days</option>
-              <option value="4">4 days</option>
-              <option value="5">5 days</option>
-              <option value="6">6 days</option>
-              <option value="7">7 days</option>
-            </select>
-          </div>
-          <button type="button" id="add-goal-btn" class="btn-primary">Add Goal</button>
         </div>
-        <div id="goals-list"></div>
-        <p id="goals-empty-state" class="empty-state">No goals set for this week. Add one above!</p>
 
       </section>
 

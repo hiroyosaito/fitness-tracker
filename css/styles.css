@@ -1065,13 +1065,85 @@ body {
 .goals-section-heading {
   font-size: 1rem;
   color: var(--text-secondary);
+  margin-bottom: 0;
+}
+
+/* Goals accordion */
+.goals-accordion-section {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  margin-bottom: var(--spacing-sm);
+  overflow: hidden;
+}
+
+.goals-accordion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: var(--spacing-md);
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+  gap: var(--spacing-sm);
+}
+
+button.goals-accordion-header:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.goals-accordion-static {
+  cursor: default;
+}
+
+.goals-accordion-body {
+  padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
+}
+
+.goals-accordion-body .add-form {
+  background: var(--bg-tertiary);
   margin-bottom: var(--spacing-md);
 }
 
-.plan-tomorrow-heading {
-  margin-top: var(--spacing-lg);
-  padding-top: var(--spacing-lg);
-  border-top: 1px solid var(--border);
+.accordion-right {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-shrink: 0;
+}
+
+.accordion-summary {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.accordion-chevron {
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  transition: transform 0.2s ease;
+  line-height: 1;
+}
+
+/* Input with unit label */
+.input-with-unit {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.input-with-unit .daily-target-input {
+  flex: 1;
+}
+
+.input-unit-label {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 28px;
 }
 
 /* Daily Goals checklist */

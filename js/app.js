@@ -684,6 +684,23 @@
       setTimeout(() => goalSuggestions.classList.remove('active'), 200);
     });
 
+    // Goals accordion toggles
+    UI.$('plan-tomorrow-toggle').addEventListener('click', () => {
+      const body = UI.$('plan-tomorrow-body');
+      const isOpen = body.style.display !== 'none';
+      body.style.display = isOpen ? 'none' : 'block';
+      UI.$('plan-tomorrow-chevron').style.transform = isOpen ? '' : 'rotate(90deg)';
+      UI.$('plan-tomorrow-toggle').setAttribute('aria-expanded', String(!isOpen));
+    });
+
+    UI.$('weekly-goals-toggle').addEventListener('click', () => {
+      const body = UI.$('weekly-goals-body');
+      const isOpen = body.style.display !== 'none';
+      body.style.display = isOpen ? 'none' : 'block';
+      UI.$('weekly-goals-chevron').style.transform = isOpen ? '' : 'rotate(90deg)';
+      UI.$('weekly-goals-toggle').setAttribute('aria-expanded', String(!isOpen));
+    });
+
     // Edit modal
     UI.$('edit-cancel-btn').addEventListener('click', closeEditModal);
     UI.$('edit-form').addEventListener('submit', handleEditSave);
@@ -1684,21 +1701,24 @@
 
       renderDailyGoals(todayGoals, exerciseStats);
 
-      const formHeading = UI.$('daily-form-heading');
       const planEmptyState = UI.$('daily-plan-empty-state');
       const btn = UI.$('add-daily-goal-btn');
 
+      renderPlanTomorrow(tomorrowGoals);
+
+      const n = tomorrowGoals.length;
+      UI.$('plan-tomorrow-summary').textContent = n === 0 ? 'Nothing planned yet' : `${n} goal${n !== 1 ? 's' : ''} set`;
+      planEmptyState.style.display = n === 0 ? 'block' : 'none';
+
       if (planningMode) {
         dailyTargetDate = tomorrow;
-        formHeading.style.display = 'block';
         btn.textContent = 'Add for Tomorrow';
-        renderPlanTomorrow(tomorrowGoals);
-        planEmptyState.style.display = tomorrowGoals.length === 0 ? 'block' : 'none';
+        const planBody = UI.$('plan-tomorrow-body');
+        planBody.style.display = 'block';
+        UI.$('plan-tomorrow-chevron').style.transform = 'rotate(90deg)';
+        UI.$('plan-tomorrow-toggle').setAttribute('aria-expanded', 'true');
       } else {
         dailyTargetDate = today;
-        formHeading.style.display = 'none';
-        UI.$('daily-plan-list').innerHTML = '';
-        planEmptyState.style.display = 'none';
         btn.textContent = 'Add to Today';
       }
     } catch (err) {
@@ -1901,6 +1921,9 @@
     const list = UI.$('goals-list');
     const emptyState = UI.$('goals-empty-state');
     list.innerHTML = '';
+
+    const n = goals.length;
+    UI.$('weekly-goals-summary').textContent = n === 0 ? 'No goals this week' : `${n} goal${n !== 1 ? 's' : ''} active`;
 
     if (goals.length === 0) {
       emptyState.style.display = 'block';
