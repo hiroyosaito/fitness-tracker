@@ -280,7 +280,16 @@
 
         <!-- Daily Goals -->
         <h2 class="goals-section-heading">Today's Goals</h2>
-        <div class="add-form">
+        <div id="daily-goals-list"></div>
+        <p id="daily-goals-empty-state" class="empty-state">No goals set for today.</p>
+
+        <!-- Plan Tomorrow (shown conditionally) -->
+        <h2 id="daily-form-heading" class="goals-section-heading plan-tomorrow-heading" style="display:none;">Plan Tomorrow</h2>
+        <div id="daily-plan-list"></div>
+        <p id="daily-plan-empty-state" class="empty-state" style="display:none;">Nothing planned for tomorrow yet.</p>
+
+        <!-- Add form (target date switches between today / tomorrow) -->
+        <div class="add-form" style="margin-top:var(--spacing-md);">
           <div class="form-row" style="grid-template-columns: 2fr 1fr;">
             <div class="form-group" style="margin-bottom:0;">
               <label for="daily-goal-exercise">Exercise</label>
@@ -294,8 +303,6 @@
           </div>
           <button type="button" id="add-daily-goal-btn" class="btn-primary" style="margin-top:var(--spacing-md);">Add to Today</button>
         </div>
-        <div id="daily-goals-list"></div>
-        <p id="daily-goals-empty-state" class="empty-state">No goals set for today. Add one above!</p>
 
         <!-- Weekly Goals -->
         <h2 class="goals-section-heading" style="margin-top:var(--spacing-lg);">Weekly Goals</h2>

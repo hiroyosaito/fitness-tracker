@@ -50,6 +50,7 @@
   let historyLoaded = false;
   let goalsLoaded = false;
   let dailyNudgeDismissed = false;
+  let dailyTargetDate = null;
 
   // Handle login screen
   async function setupAuth() {
@@ -1638,19 +1639,68 @@
 
   async function loadDailyGoals() {
     const today = UI.getTodayDate();
+    const tomorrow = dateOffset(today, 1);
+    const isPastPlanningTime = new Date().getHours() >= 18;
+
     UI.$('daily-goals-list').innerHTML = '';
     UI.$('daily-goals-empty-state').style.display = 'none';
 
     try {
-      const [goals, doneNames] = await Promise.all([
+      const [todayGoals, doneNames, tomorrowGoals] = await Promise.all([
         FitnessDB.getDailyGoals(today),
-        FitnessDB.getTodayExerciseNames(today)
+        FitnessDB.getTodayExerciseNames(today),
+        FitnessDB.getDailyGoals(tomorrow)
       ]);
-      renderDailyGoals(goals, doneNames);
+
+      const allDone = todayGoals.length > 0 && todayGoals.every(g => doneNames.has(g.exercise_name.toLowerCase()));
+      const planningMode = allDone || isPastPlanningTime;
+
+      renderDailyGoals(todayGoals, doneNames);
+
+      const formHeading = UI.$('daily-form-heading');
+      const planEmptyState = UI.$('daily-plan-empty-state');
+      const btn = UI.$('add-daily-goal-btn');
+
+      if (planningMode) {
+        dailyTargetDate = tomorrow;
+        formHeading.style.display = 'block';
+        btn.textContent = 'Add for Tomorrow';
+        renderPlanTomorrow(tomorrowGoals);
+        planEmptyState.style.display = tomorrowGoals.length === 0 ? 'block' : 'none';
+      } else {
+        dailyTargetDate = today;
+        formHeading.style.display = 'none';
+        UI.$('daily-plan-list').innerHTML = '';
+        planEmptyState.style.display = 'none';
+        btn.textContent = 'Add to Today';
+      }
     } catch (err) {
       console.error('Failed to load daily goals:', err);
       UI.$('daily-goals-list').innerHTML = '<p class="empty-state">Failed to load.</p>';
     }
+  }
+
+  function renderPlanTomorrow(goals) {
+    const list = UI.$('daily-plan-list');
+    list.innerHTML = '';
+    goals.forEach(goal => {
+      const card = UI.createElement('div', { className: 'goal-card' });
+      const checkIcon = UI.createElement('span', { className: 'daily-check-icon', textContent: '⬜' });
+      const nameEl = UI.createElement('span', { className: 'goal-name', textContent: goal.exercise_name });
+      const cutoffEl = UI.createElement('span', { className: 'daily-goal-cutoff', textContent: `by ${formatCutoffTime(goal.cutoff_time)}` });
+      const checkRow = UI.createElement('div', { className: 'daily-check-row' }, [checkIcon, nameEl, cutoffEl]);
+      const deleteBtn = UI.createElement('button', {
+        className: 'btn-icon delete',
+        innerHTML: '×',
+        title: 'Remove',
+        onClick: async () => {
+          await FitnessDB.deleteDailyGoal(goal.id);
+          await loadDailyGoals();
+        }
+      });
+      card.appendChild(UI.createElement('div', { className: 'goal-header' }, [checkRow, deleteBtn]));
+      list.appendChild(card);
+    });
   }
 
   function renderDailyGoals(goals, doneNames) {
@@ -1738,14 +1788,15 @@
       return;
     }
     const cutoffTime = cutoffInput.value || '21:00';
-    const today = UI.getTodayDate();
+    const targetDate = dailyTargetDate || UI.getTodayDate();
 
     const btn = UI.$('add-daily-goal-btn');
+    const originalLabel = btn.textContent;
     btn.disabled = true;
     btn.textContent = 'Adding...';
 
     try {
-      await FitnessDB.addDailyGoal(name, today, cutoffTime);
+      await FitnessDB.addDailyGoal(name, targetDate, cutoffTime);
       nameInput.value = '';
       await loadDailyGoals();
     } catch (err) {
@@ -1753,7 +1804,7 @@
       UI.showToast('Failed to add goal', 'error');
     } finally {
       btn.disabled = false;
-      btn.textContent = 'Add to Today';
+      btn.textContent = originalLabel;
     }
   }
 
