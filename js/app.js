@@ -606,6 +606,52 @@
     // Weekly goals
     UI.$('add-goal-btn').addEventListener('click', handleAddGoal);
 
+    const goalExerciseInput = UI.$('goal-exercise');
+    const goalSuggestions = UI.$('goal-exercise-suggestions');
+
+    goalExerciseInput.addEventListener('input', () => {
+      const q = goalExerciseInput.value.trim().toLowerCase();
+      const matches = q
+        ? cachedUserExerciseNames.filter(n => n.toLowerCase().includes(q))
+        : cachedUserExerciseNames;
+      goalSuggestions.innerHTML = '';
+      if (matches.length === 0) { goalSuggestions.classList.remove('active'); return; }
+      matches.slice(0, 8).forEach((name, i) => {
+        const li = UI.createElement('li', {
+          textContent: name,
+          onClick: () => {
+            goalExerciseInput.value = name;
+            goalSuggestions.classList.remove('active');
+          }
+        });
+        if (i === 0) li.classList.add('selected');
+        goalSuggestions.appendChild(li);
+      });
+      goalSuggestions.classList.add('active');
+    });
+
+    goalExerciseInput.addEventListener('focus', () => {
+      if (!goalExerciseInput.value.trim() && cachedUserExerciseNames.length > 0) {
+        goalSuggestions.innerHTML = '';
+        cachedUserExerciseNames.slice(0, 8).forEach((name, i) => {
+          const li = UI.createElement('li', {
+            textContent: name,
+            onClick: () => {
+              goalExerciseInput.value = name;
+              goalSuggestions.classList.remove('active');
+            }
+          });
+          if (i === 0) li.classList.add('selected');
+          goalSuggestions.appendChild(li);
+        });
+        goalSuggestions.classList.add('active');
+      }
+    });
+
+    goalExerciseInput.addEventListener('blur', () => {
+      setTimeout(() => goalSuggestions.classList.remove('active'), 200);
+    });
+
     // Edit modal
     UI.$('edit-cancel-btn').addEventListener('click', closeEditModal);
     UI.$('edit-form').addEventListener('submit', handleEditSave);
