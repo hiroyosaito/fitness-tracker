@@ -1650,17 +1650,24 @@
 
       const card = UI.createElement('div', { className: 'goal-card' + (completed ? ' goal-completed' : '') });
 
+      const editBtn = UI.createElement('button', {
+        className: 'btn-icon edit',
+        innerHTML: '✎',
+        title: 'Edit goal',
+        onClick: () => showGoalEditMode(card, goal)
+      });
+      const deleteBtn = UI.createElement('button', {
+        className: 'btn-icon delete',
+        innerHTML: '×',
+        title: 'Remove goal',
+        onClick: async () => {
+          await FitnessDB.deleteWeeklyGoal(goal.id);
+          await loadGoals();
+        }
+      });
       const header = UI.createElement('div', { className: 'goal-header' }, [
         UI.createElement('div', { className: 'goal-name', textContent: goal.exercise_name }),
-        UI.createElement('button', {
-          className: 'btn-icon delete',
-          innerHTML: '×',
-          title: 'Remove goal',
-          onClick: async () => {
-            await FitnessDB.deleteWeeklyGoal(goal.id);
-            await loadGoals();
-          }
-        })
+        UI.createElement('div', { className: 'exercise-actions' }, [editBtn, deleteBtn])
       ]);
 
       const progressRow = UI.createElement('div', { className: 'goal-progress-row' }, [
@@ -1680,6 +1687,48 @@
       children.forEach(c => card.appendChild(c));
       list.appendChild(card);
     });
+  }
+
+  function showGoalEditMode(card, goal) {
+    card.innerHTML = '';
+
+    const nameEl = UI.createElement('div', { className: 'goal-name', style: { marginBottom: 'var(--spacing-sm)' }, textContent: goal.exercise_name });
+
+    const select = UI.createElement('select', { className: 'goal-edit-select' });
+    for (let d = 1; d <= 7; d++) {
+      const opt = UI.createElement('option', { value: String(d), textContent: `${d} day${d !== 1 ? 's' : ''} per week` });
+      if (d === goal.target_days) opt.selected = true;
+      select.appendChild(opt);
+    }
+
+    const saveBtn = UI.createElement('button', {
+      className: 'btn-primary',
+      style: { marginTop: 'var(--spacing-sm)' },
+      textContent: 'Save',
+      onClick: async () => {
+        const newDays = parseInt(select.value);
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving...';
+        try {
+          await FitnessDB.updateWeeklyGoal(goal.id, newDays);
+          await loadGoals();
+        } catch (err) {
+          console.error('Failed to update goal:', err);
+          UI.showToast('Failed to save', 'error');
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'Save';
+        }
+      }
+    });
+
+    const cancelBtn = UI.createElement('button', {
+      className: 'btn-secondary',
+      style: { marginTop: 'var(--spacing-xs)' },
+      textContent: 'Cancel',
+      onClick: () => loadGoals()
+    });
+
+    [nameEl, select, saveBtn, cancelBtn].forEach(el => card.appendChild(el));
   }
 
   async function handleAddGoal() {

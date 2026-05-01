@@ -217,6 +217,14 @@ async function getWeeklyGoals(weekStart) {
   );
 }
 
+async function updateWeeklyGoal(id, targetDays) {
+  const result = await supabaseRequest(`weekly_goals?id=eq.${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ target_days: targetDays })
+  });
+  return result[0];
+}
+
 async function deleteWeeklyGoal(id) {
   await supabaseRequest(`weekly_goals?id=eq.${id}`, {
     method: 'DELETE',
@@ -539,6 +547,7 @@ window.FitnessDB = {
   getLastExerciseByName,
   addWeeklyGoal,
   getWeeklyGoals,
+  updateWeeklyGoal,
   deleteWeeklyGoal,
   getWeekExerciseCounts,
   signUp,
