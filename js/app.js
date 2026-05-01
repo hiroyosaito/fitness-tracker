@@ -622,6 +622,7 @@
           onClick: () => {
             dailyExerciseInput.value = name;
             dailySuggestions.classList.remove('active');
+            updateDailyTargetFields(name);
           }
         });
         if (i === 0) li.classList.add('selected');
@@ -630,7 +631,10 @@
       dailySuggestions.classList.add('active');
     }
 
-    dailyExerciseInput.addEventListener('input', () => showDailySuggestions(dailyExerciseInput.value.trim()));
+    dailyExerciseInput.addEventListener('input', () => {
+      showDailySuggestions(dailyExerciseInput.value.trim());
+      updateDailyTargetFields(dailyExerciseInput.value);
+    });
     dailyExerciseInput.addEventListener('focus', () => showDailySuggestions(dailyExerciseInput.value.trim()));
     dailyExerciseInput.addEventListener('blur', () => {
       setTimeout(() => dailySuggestions.classList.remove('active'), 200);
@@ -1630,6 +1634,29 @@
     return { weekStart: fmt(monday), weekEnd: fmt(sunday), daysFromMonday };
   }
 
+  function detectExerciseType(name) {
+    const lower = name.toLowerCase().trim();
+    const STANDARD_CARDIO = new Set(['walking', 'biking', 'swimming', 'running', 'elliptical', 'stairmaster', 'rowing']);
+    if (ExerciseDB.getMuscleGroups(name).length > 0) return 'strength';
+    if (cachedUserExerciseNames.some(n => n.toLowerCase() === lower)) return 'strength';
+    if (STANDARD_CARDIO.has(lower)) return 'cardio';
+    if (cachedCustomCardioNames.some(n => n.toLowerCase() === lower)) return 'cardio';
+    if (cachedClassNames.some(n => n.toLowerCase() === lower)) return 'class';
+    return 'unknown';
+  }
+
+  function updateDailyTargetFields(name) {
+    const type = name.trim() ? detectExerciseType(name) : 'unknown';
+    const setsGroup = UI.$('daily-target-sets-group');
+    const minsGroup = UI.$('daily-target-mins-group');
+    const showSets = type === 'strength' || type === 'unknown';
+    const showMins = type === 'cardio' || type === 'unknown';
+    if (!showSets) UI.$('daily-target-sets').value = '';
+    if (!showMins) UI.$('daily-target-mins').value = '';
+    setsGroup.style.display = showSets ? 'block' : 'none';
+    minsGroup.style.display = showMins ? 'block' : 'none';
+  }
+
   function formatCutoffTime(cutoffTime) {
     const [h, m] = cutoffTime.split(':').map(Number);
     const period = h >= 12 ? 'PM' : 'AM';
@@ -1646,16 +1673,16 @@
     UI.$('daily-goals-empty-state').style.display = 'none';
 
     try {
-      const [todayGoals, doneNames, tomorrowGoals] = await Promise.all([
+      const [todayGoals, exerciseStats, tomorrowGoals] = await Promise.all([
         FitnessDB.getDailyGoals(today),
-        FitnessDB.getTodayExerciseNames(today),
+        FitnessDB.getTodayExerciseStats(today),
         FitnessDB.getDailyGoals(tomorrow)
       ]);
 
-      const allDone = todayGoals.length > 0 && todayGoals.every(g => doneNames.has(g.exercise_name.toLowerCase()));
+      const allDone = todayGoals.length > 0 && todayGoals.every(g => isDailyGoalDone(g, exerciseStats));
       const planningMode = allDone || isPastPlanningTime;
 
-      renderDailyGoals(todayGoals, doneNames);
+      renderDailyGoals(todayGoals, exerciseStats);
 
       const formHeading = UI.$('daily-form-heading');
       const planEmptyState = UI.$('daily-plan-empty-state');
@@ -1699,11 +1726,23 @@
         }
       });
       card.appendChild(UI.createElement('div', { className: 'goal-header' }, [checkRow, deleteBtn]));
+      if (goal.target_sets || goal.target_minutes) {
+        const targetText = goal.target_sets ? `Target: ${goal.target_sets} sets` : `Target: ${goal.target_minutes} min`;
+        card.appendChild(UI.createElement('div', { className: 'daily-goal-progress-text', textContent: targetText }));
+      }
       list.appendChild(card);
     });
   }
 
-  function renderDailyGoals(goals, doneNames) {
+  function isDailyGoalDone(goal, exerciseStats) {
+    const stats = exerciseStats[goal.exercise_name.toLowerCase()];
+    if (!stats) return false;
+    if (goal.target_sets) return stats.sets >= goal.target_sets;
+    if (goal.target_minutes) return stats.duration >= goal.target_minutes;
+    return true;
+  }
+
+  function renderDailyGoals(goals, exerciseStats) {
     const list = UI.$('daily-goals-list');
     const emptyState = UI.$('daily-goals-empty-state');
     list.innerHTML = '';
@@ -1714,21 +1753,16 @@
     }
     emptyState.style.display = 'none';
 
-    const allDone = goals.every(g => doneNames.has(g.exercise_name.toLowerCase()));
+    const allDone = goals.every(g => isDailyGoalDone(g, exerciseStats));
 
     goals.forEach(goal => {
-      const done = doneNames.has(goal.exercise_name.toLowerCase());
+      const done = isDailyGoalDone(goal, exerciseStats);
+      const stats = exerciseStats[goal.exercise_name.toLowerCase()] || { sets: 0, duration: 0 };
       const card = UI.createElement('div', { className: 'goal-card' + (done ? ' goal-completed' : '') });
 
-      const checkIcon = UI.createElement('span', {
-        className: 'daily-check-icon',
-        textContent: done ? '✅' : '⬜'
-      });
+      const checkIcon = UI.createElement('span', { className: 'daily-check-icon', textContent: done ? '✅' : '⬜' });
       const nameEl = UI.createElement('span', { className: 'goal-name', textContent: goal.exercise_name });
-      const cutoffEl = UI.createElement('span', {
-        className: 'daily-goal-cutoff',
-        textContent: `by ${formatCutoffTime(goal.cutoff_time)}`
-      });
+      const cutoffEl = UI.createElement('span', { className: 'daily-goal-cutoff', textContent: `by ${formatCutoffTime(goal.cutoff_time)}` });
       const checkRow = UI.createElement('div', { className: 'daily-check-row' }, [checkIcon, nameEl, cutoffEl]);
 
       const deleteBtn = UI.createElement('button', {
@@ -1741,8 +1775,20 @@
         }
       });
 
-      const header = UI.createElement('div', { className: 'goal-header' }, [checkRow, deleteBtn]);
-      card.appendChild(header);
+      card.appendChild(UI.createElement('div', { className: 'goal-header' }, [checkRow, deleteBtn]));
+
+      // Progress bar for goals with a target
+      if (goal.target_sets || goal.target_minutes) {
+        const current = goal.target_sets ? stats.sets : stats.duration;
+        const target = goal.target_sets || goal.target_minutes;
+        const unit = goal.target_sets ? 'sets' : 'min';
+        const pct = Math.min(100, Math.round((current / target) * 100));
+        card.appendChild(UI.createElement('div', { className: 'daily-goal-progress-text', textContent: `${current} / ${target} ${unit}` }));
+        card.appendChild(UI.createElement('div', { className: 'goal-bar-track' }, [
+          UI.createElement('div', { className: 'goal-bar-fill' + (done ? '' : ''), style: { width: pct + '%' } })
+        ]));
+      }
+
       list.appendChild(card);
     });
 
@@ -1757,7 +1803,7 @@
     // Nudge: within 2h of cutoff, unfinished, once per session
     if (!dailyNudgeDismissed) {
       const now = new Date();
-      const unfinished = goals.filter(g => !doneNames.has(g.exercise_name.toLowerCase()));
+      const unfinished = goals.filter(g => !isDailyGoalDone(g, exerciseStats));
       const nudgeGoals = unfinished.filter(g => {
         const [h, m] = g.cutoff_time.split(':').map(Number);
         const cutoff = new Date();
@@ -1769,10 +1815,25 @@
       if (nudgeGoals.length > 0) {
         dailyNudgeDismissed = true;
         const timeStr = formatCutoffTime(nudgeGoals[0].cutoff_time);
-        const names = nudgeGoals.map(g => g.exercise_name).join(', ');
+        const parts = nudgeGoals.map(g => {
+          const s = exerciseStats[g.exercise_name.toLowerCase()] || { sets: 0, duration: 0 };
+          if (g.target_sets) {
+            const rem = Math.max(1, g.target_sets - s.sets);
+            return `${rem} more set${rem !== 1 ? 's' : ''} of ${g.exercise_name}`;
+          }
+          if (g.target_minutes) {
+            const rem = Math.max(1, g.target_minutes - s.duration);
+            return `${rem} more minute${rem !== 1 ? 's' : ''} of ${g.exercise_name}`;
+          }
+          return g.exercise_name;
+        });
+        const allTargeted = nudgeGoals.every(g => g.target_sets || g.target_minutes);
+        const needText = allTargeted
+          ? `you still need ${parts.join(' and ')}`
+          : `you still haven't logged ${parts.join(', ')}`;
         list.appendChild(UI.createElement('div', {
           className: 'goal-message goal-message-warning',
-          textContent: `It's almost ${timeStr} — you still haven't logged ${names} today. You've got time!`
+          textContent: `It's almost ${timeStr} — ${needText} today. You've got time!`
         }));
       }
     }
@@ -1790,14 +1851,23 @@
     const cutoffTime = cutoffInput.value || '21:00';
     const targetDate = dailyTargetDate || UI.getTodayDate();
 
+    const setsVal = UI.$('daily-target-sets').value;
+    const minsVal = UI.$('daily-target-mins').value;
+    const targetSets = setsVal ? parseInt(setsVal) : null;
+    const targetMins = minsVal ? parseInt(minsVal) : null;
+
     const btn = UI.$('add-daily-goal-btn');
     const originalLabel = btn.textContent;
     btn.disabled = true;
     btn.textContent = 'Adding...';
 
     try {
-      await FitnessDB.addDailyGoal(name, targetDate, cutoffTime);
+      await FitnessDB.addDailyGoal(name, targetDate, cutoffTime, targetSets, targetMins);
       nameInput.value = '';
+      UI.$('daily-target-sets').value = '';
+      UI.$('daily-target-mins').value = '';
+      UI.$('daily-target-sets-group').style.display = 'none';
+      UI.$('daily-target-mins-group').style.display = 'none';
       await loadDailyGoals();
     } catch (err) {
       console.error('Failed to add daily goal:', err);

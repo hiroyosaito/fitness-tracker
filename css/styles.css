@@ -1094,6 +1094,27 @@ body {
   white-space: nowrap;
 }
 
+.daily-target-input {
+  width: 100%;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: 0.95rem;
+}
+
+.daily-target-input::placeholder {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.daily-goal-progress-text {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  padding: var(--spacing-xs) 0 var(--spacing-xs) calc(1.25rem + var(--spacing-sm));
+}
+
 /* Weekly Goals */
 .goal-card {
   background: var(--bg-secondary);

@@ -250,7 +250,7 @@ async function getWeekExerciseCounts(weekStart, weekEnd) {
 
 // --- Daily Goals ---
 
-async function addDailyGoal(exerciseName, targetDate, cutoffTime) {
+async function addDailyGoal(exerciseName, targetDate, cutoffTime, targetSets, targetMinutes) {
   const entry = {
     user_id: getCurrentUserId(),
     exercise_name: exerciseName,
@@ -258,6 +258,8 @@ async function addDailyGoal(exerciseName, targetDate, cutoffTime) {
     cutoff_time: cutoffTime,
     created_at: Date.now()
   };
+  if (targetSets) entry.target_sets = targetSets;
+  if (targetMinutes) entry.target_minutes = targetMinutes;
   const result = await supabaseRequest('daily_goals', {
     method: 'POST',
     body: JSON.stringify(entry)
@@ -279,12 +281,19 @@ async function deleteDailyGoal(id) {
   });
 }
 
-async function getTodayExerciseNames(date) {
+async function getTodayExerciseStats(date) {
   const userId = getCurrentUserId();
   const result = await supabaseRequest(
-    `exercises?user_id=eq.${userId}&date=eq.${date}&select=name`
+    `exercises?user_id=eq.${userId}&date=eq.${date}&select=name,sets,duration`
   );
-  return new Set(result.map(r => r.name.toLowerCase()));
+  const stats = {};
+  result.forEach(r => {
+    const key = r.name.toLowerCase();
+    if (!stats[key]) stats[key] = { sets: 0, duration: 0 };
+    stats[key].sets += r.sets || 0;
+    stats[key].duration += r.duration || 0;
+  });
+  return stats;
 }
 
 // Add a new exercise entry
@@ -592,7 +601,7 @@ window.FitnessDB = {
   addDailyGoal,
   getDailyGoals,
   deleteDailyGoal,
-  getTodayExerciseNames,
+  getTodayExerciseStats,
   signUp,
   signIn,
   signOut,
