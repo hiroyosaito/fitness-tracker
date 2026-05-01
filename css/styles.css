@@ -1061,6 +1061,33 @@ body {
   border-color: var(--text-secondary);
 }
 
+/* Goals section headings */
+.goals-section-heading {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-md);
+}
+
+/* Daily Goals checklist */
+.daily-check-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex: 1;
+}
+
+.daily-check-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.daily-goal-cutoff {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-left: auto;
+  white-space: nowrap;
+}
+
 /* Weekly Goals */
 .goal-card {
   background: var(--bg-secondary);

@@ -49,6 +49,7 @@
   let exerciseDropdownLoaded = false;
   let historyLoaded = false;
   let goalsLoaded = false;
+  let dailyNudgeDismissed = false;
 
   // Handle login screen
   async function setupAuth() {
@@ -603,6 +604,37 @@
     // Database check button
     UI.$('check-db-btn').addEventListener('click', checkDatabase);
 
+    // Daily goals
+    UI.$('add-daily-goal-btn').addEventListener('click', handleAddDailyGoal);
+
+    const dailyExerciseInput = UI.$('daily-goal-exercise');
+    const dailySuggestions = UI.$('daily-goal-suggestions');
+
+    function showDailySuggestions(q) {
+      const all = getAllGoalNames();
+      const matches = q ? all.filter(n => n.toLowerCase().includes(q.toLowerCase())) : all;
+      dailySuggestions.innerHTML = '';
+      if (matches.length === 0) { dailySuggestions.classList.remove('active'); return; }
+      matches.slice(0, 8).forEach((name, i) => {
+        const li = UI.createElement('li', {
+          textContent: name,
+          onClick: () => {
+            dailyExerciseInput.value = name;
+            dailySuggestions.classList.remove('active');
+          }
+        });
+        if (i === 0) li.classList.add('selected');
+        dailySuggestions.appendChild(li);
+      });
+      dailySuggestions.classList.add('active');
+    }
+
+    dailyExerciseInput.addEventListener('input', () => showDailySuggestions(dailyExerciseInput.value.trim()));
+    dailyExerciseInput.addEventListener('focus', () => showDailySuggestions(dailyExerciseInput.value.trim()));
+    dailyExerciseInput.addEventListener('blur', () => {
+      setTimeout(() => dailySuggestions.classList.remove('active'), 200);
+    });
+
     // Weekly goals
     UI.$('add-goal-btn').addEventListener('click', handleAddGoal);
 
@@ -1132,9 +1164,11 @@
       UI.renderClassList(allEntries.filter(e => e.type === 'class'), elements.classList, handleDeleteExercise, 'class-empty-state', openEditModal);
 
       // Refresh goals silently when logging today's exercises so progress stays current
-      const { weekStart } = getWeekBounds();
-      if (fetchingFor === weekStart.slice(0, 10) || isCurrentWeek(fetchingFor)) {
+      if (isCurrentWeek(fetchingFor)) {
         loadGoals().catch(() => {});
+      }
+      if (fetchingFor === UI.getTodayDate()) {
+        loadDailyGoals().catch(() => {});
       }
     } catch (error) {
       console.error('Failed to load data:', error);
@@ -1595,6 +1629,134 @@
     return { weekStart: fmt(monday), weekEnd: fmt(sunday), daysFromMonday };
   }
 
+  function formatCutoffTime(cutoffTime) {
+    const [h, m] = cutoffTime.split(':').map(Number);
+    const period = h >= 12 ? 'PM' : 'AM';
+    const displayH = h > 12 ? h - 12 : (h === 0 ? 12 : h);
+    return m === 0 ? `${displayH} ${period}` : `${displayH}:${String(m).padStart(2, '0')} ${period}`;
+  }
+
+  async function loadDailyGoals() {
+    const today = UI.getTodayDate();
+    UI.$('daily-goals-list').innerHTML = '';
+    UI.$('daily-goals-empty-state').style.display = 'none';
+
+    try {
+      const [goals, doneNames] = await Promise.all([
+        FitnessDB.getDailyGoals(today),
+        FitnessDB.getTodayExerciseNames(today)
+      ]);
+      renderDailyGoals(goals, doneNames);
+    } catch (err) {
+      console.error('Failed to load daily goals:', err);
+      UI.$('daily-goals-list').innerHTML = '<p class="empty-state">Failed to load.</p>';
+    }
+  }
+
+  function renderDailyGoals(goals, doneNames) {
+    const list = UI.$('daily-goals-list');
+    const emptyState = UI.$('daily-goals-empty-state');
+    list.innerHTML = '';
+
+    if (goals.length === 0) {
+      emptyState.style.display = 'block';
+      return;
+    }
+    emptyState.style.display = 'none';
+
+    const allDone = goals.every(g => doneNames.has(g.exercise_name.toLowerCase()));
+
+    goals.forEach(goal => {
+      const done = doneNames.has(goal.exercise_name.toLowerCase());
+      const card = UI.createElement('div', { className: 'goal-card' + (done ? ' goal-completed' : '') });
+
+      const checkIcon = UI.createElement('span', {
+        className: 'daily-check-icon',
+        textContent: done ? '✅' : '⬜'
+      });
+      const nameEl = UI.createElement('span', { className: 'goal-name', textContent: goal.exercise_name });
+      const cutoffEl = UI.createElement('span', {
+        className: 'daily-goal-cutoff',
+        textContent: `by ${formatCutoffTime(goal.cutoff_time)}`
+      });
+      const checkRow = UI.createElement('div', { className: 'daily-check-row' }, [checkIcon, nameEl, cutoffEl]);
+
+      const deleteBtn = UI.createElement('button', {
+        className: 'btn-icon delete',
+        innerHTML: '×',
+        title: 'Remove',
+        onClick: async () => {
+          await FitnessDB.deleteDailyGoal(goal.id);
+          await loadDailyGoals();
+        }
+      });
+
+      const header = UI.createElement('div', { className: 'goal-header' }, [checkRow, deleteBtn]);
+      card.appendChild(header);
+      list.appendChild(card);
+    });
+
+    if (allDone) {
+      list.appendChild(UI.createElement('div', {
+        className: 'goal-message goal-message-success',
+        textContent: 'You finished everything on your list for today — great work!'
+      }));
+      return;
+    }
+
+    // Nudge: within 2h of cutoff, unfinished, once per session
+    if (!dailyNudgeDismissed) {
+      const now = new Date();
+      const unfinished = goals.filter(g => !doneNames.has(g.exercise_name.toLowerCase()));
+      const nudgeGoals = unfinished.filter(g => {
+        const [h, m] = g.cutoff_time.split(':').map(Number);
+        const cutoff = new Date();
+        cutoff.setHours(h, m, 0, 0);
+        const minsLeft = (cutoff - now) / 60000;
+        return minsLeft > 0 && minsLeft <= 120;
+      });
+
+      if (nudgeGoals.length > 0) {
+        dailyNudgeDismissed = true;
+        const timeStr = formatCutoffTime(nudgeGoals[0].cutoff_time);
+        const names = nudgeGoals.map(g => g.exercise_name).join(', ');
+        list.appendChild(UI.createElement('div', {
+          className: 'goal-message goal-message-warning',
+          textContent: `It's almost ${timeStr} — you still haven't logged ${names} today. You've got time!`
+        }));
+      }
+    }
+  }
+
+  async function handleAddDailyGoal() {
+    const nameInput = UI.$('daily-goal-exercise');
+    const cutoffInput = UI.$('daily-goal-cutoff');
+    const name = nameInput.value.trim();
+    if (!name) {
+      UI.showToast('Enter an exercise name', 'error');
+      nameInput.focus();
+      return;
+    }
+    const cutoffTime = cutoffInput.value || '21:00';
+    const today = UI.getTodayDate();
+
+    const btn = UI.$('add-daily-goal-btn');
+    btn.disabled = true;
+    btn.textContent = 'Adding...';
+
+    try {
+      await FitnessDB.addDailyGoal(name, today, cutoffTime);
+      nameInput.value = '';
+      await loadDailyGoals();
+    } catch (err) {
+      console.error('Failed to add daily goal:', err);
+      UI.showToast('Failed to add goal', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Add to Today';
+    }
+  }
+
   async function loadGoals() {
     const { weekStart, weekEnd, daysFromMonday } = getWeekBounds();
     const daysRemaining = 7 - daysFromMonday; // includes today
@@ -1780,6 +1942,7 @@
 
     // Reload goals each time (needs fresh exercise counts)
     if (tabName === 'goals') {
+      loadDailyGoals();
       loadGoals();
     }
   }

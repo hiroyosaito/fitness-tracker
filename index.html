@@ -275,8 +275,30 @@
         <p id="history-empty-state" class="empty-state" style="display:none;">No workout history yet.</p>
       </section>
 
-      <!-- Weekly Goals Section -->
+      <!-- Goals Section -->
       <section id="goals-section" class="section">
+
+        <!-- Daily Goals -->
+        <h2 class="goals-section-heading">Today's Goals</h2>
+        <div class="add-form">
+          <div class="form-row" style="grid-template-columns: 2fr 1fr;">
+            <div class="form-group" style="margin-bottom:0;">
+              <label for="daily-goal-exercise">Exercise</label>
+              <input type="text" id="daily-goal-exercise" placeholder="e.g. Squats..." autocomplete="off">
+              <ul id="daily-goal-suggestions" class="suggestions"></ul>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label for="daily-goal-cutoff">By</label>
+              <input type="time" id="daily-goal-cutoff" value="21:00">
+            </div>
+          </div>
+          <button type="button" id="add-daily-goal-btn" class="btn-primary" style="margin-top:var(--spacing-md);">Add to Today</button>
+        </div>
+        <div id="daily-goals-list"></div>
+        <p id="daily-goals-empty-state" class="empty-state">No goals set for today. Add one above!</p>
+
+        <!-- Weekly Goals -->
+        <h2 class="goals-section-heading" style="margin-top:var(--spacing-lg);">Weekly Goals</h2>
         <div class="add-form">
           <div class="form-group">
             <label for="goal-exercise">Exercise Name</label>
@@ -297,12 +319,9 @@
           </div>
           <button type="button" id="add-goal-btn" class="btn-primary">Add Goal</button>
         </div>
+        <div id="goals-list"></div>
+        <p id="goals-empty-state" class="empty-state">No goals set for this week. Add one above!</p>
 
-        <div class="workout-log">
-          <h2>This Week's Goals</h2>
-          <div id="goals-list"></div>
-          <p id="goals-empty-state" class="empty-state">No goals set for this week. Add one above!</p>
-        </div>
       </section>
 
       <!-- Reports Section -->
