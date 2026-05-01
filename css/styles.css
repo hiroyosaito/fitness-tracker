@@ -96,8 +96,8 @@ body {
   filter: invert(1);
 }
 
-/* Navigation Tabs */
-.tabs {
+/* Top Navigation (Strength, Cardio, Classes) */
+.top-tabs {
   display: flex;
   background: var(--bg-secondary);
   padding: var(--spacing-sm);
@@ -106,11 +106,9 @@ body {
 }
 
 .tab {
-  flex: 1;
   background: transparent;
   border: none;
   color: var(--text-secondary);
-  padding: var(--spacing-sm) var(--spacing-md);
   font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
@@ -123,19 +121,61 @@ body {
   cursor: not-allowed;
 }
 
-.tab.active {
+.top-tabs .tab {
+  flex: 1;
+  padding: var(--spacing-sm) var(--spacing-md);
+}
+
+.top-tabs .tab.active {
   background: var(--accent);
   color: white;
 }
 
-.tab:not(:disabled):not(.active):hover {
+.top-tabs .tab:not(:disabled):not(.active):hover {
   background: var(--bg-tertiary);
+}
+
+/* Bottom Navigation (Goals, History, Reports) */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-width: 600px;
+  margin: 0 auto;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border);
+  display: flex;
+  z-index: 200;
+  padding-bottom: var(--safe-bottom);
+}
+
+.bottom-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 10px var(--spacing-sm);
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+.bottom-nav-item.active {
+  color: var(--accent);
+}
+
+.bottom-nav-item:not(.active):hover {
+  color: var(--text-secondary);
 }
 
 /* Main Content */
 .content {
   flex: 1;
   padding: var(--spacing-md);
+  padding-bottom: calc(56px + var(--spacing-md) + var(--safe-bottom));
   overflow-y: auto;
 }
 
