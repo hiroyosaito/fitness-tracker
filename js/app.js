@@ -51,6 +51,7 @@
   let goalsLoaded = false;
   let dailyNudgeDismissed = false;
   let dailyTargetDate = null;
+  let editingDailyGoalId = null;
 
   // Handle login screen
   async function setupAuth() {
@@ -714,6 +715,18 @@
       const isOpen = fields.style.display !== 'none';
       fields.style.display = isOpen ? 'none' : 'block';
       if (!isOpen) UI.$('goal-exercise').focus();
+    });
+
+    // Plan Tomorrow static add trigger (visible during day mode when form is in Today's section)
+    UI.$('plan-tomorrow-add-trigger').addEventListener('click', () => {
+      dailyTargetDate = dateOffset(UI.getTodayDate(), 1);
+      UI.$('add-daily-goal-btn').textContent = 'Add for Tomorrow';
+      UI.$('daily-goal-trigger').textContent = '+ Add for tomorrow';
+      const planBody = UI.$('plan-tomorrow-body');
+      planBody.appendChild(UI.$('daily-add-form-wrapper'));
+      UI.$('daily-goal-fields').style.display = 'block';
+      UI.$('plan-tomorrow-add-trigger').style.display = 'none';
+      UI.$('daily-goal-exercise').focus();
     });
 
     // Edit modal
@@ -1735,11 +1748,13 @@
         planBody.style.display = 'block';
         UI.$('plan-tomorrow-chevron').style.transform = 'rotate(90deg)';
         UI.$('plan-tomorrow-toggle').setAttribute('aria-expanded', 'true');
+        UI.$('plan-tomorrow-add-trigger').style.display = 'none';
       } else {
         dailyTargetDate = today;
         btn.textContent = 'Add to Today';
         UI.$('daily-goal-trigger').textContent = '+ Add exercise';
         UI.$('today-goals-body').appendChild(formWrapper);
+        UI.$('plan-tomorrow-add-trigger').style.display = 'block';
       }
     } catch (err) {
       console.error('Failed to load daily goals:', err);
@@ -1756,6 +1771,12 @@
       const nameEl = UI.createElement('span', { className: 'goal-name', textContent: goal.exercise_name });
       const cutoffEl = UI.createElement('span', { className: 'daily-goal-cutoff', textContent: `by ${formatCutoffTime(goal.cutoff_time)}` });
       const checkRow = UI.createElement('div', { className: 'daily-check-row' }, [checkIcon, nameEl, cutoffEl]);
+      const editBtn = UI.createElement('button', {
+        className: 'btn-icon edit',
+        innerHTML: '✎',
+        title: 'Edit',
+        onClick: () => populateDailyGoalForm(goal)
+      });
       const deleteBtn = UI.createElement('button', {
         className: 'btn-icon delete',
         innerHTML: '×',
@@ -1765,7 +1786,10 @@
           await loadDailyGoals();
         }
       });
-      card.appendChild(UI.createElement('div', { className: 'goal-header' }, [checkRow, deleteBtn]));
+      card.appendChild(UI.createElement('div', { className: 'goal-header' }, [
+        checkRow,
+        UI.createElement('div', { className: 'exercise-actions' }, [editBtn, deleteBtn])
+      ]));
       if (goal.target_reps) {
         card.appendChild(UI.createElement('div', { className: 'goal-reps-hint', textContent: `aim for ${goal.target_reps} reps per set` }));
       }
@@ -1808,6 +1832,12 @@
       const cutoffEl = UI.createElement('span', { className: 'daily-goal-cutoff', textContent: `by ${formatCutoffTime(goal.cutoff_time)}` });
       const checkRow = UI.createElement('div', { className: 'daily-check-row' }, [checkIcon, nameEl, cutoffEl]);
 
+      const editBtn = UI.createElement('button', {
+        className: 'btn-icon edit',
+        innerHTML: '✎',
+        title: 'Edit',
+        onClick: () => populateDailyGoalForm(goal)
+      });
       const deleteBtn = UI.createElement('button', {
         className: 'btn-icon delete',
         innerHTML: '×',
@@ -1818,7 +1848,10 @@
         }
       });
 
-      card.appendChild(UI.createElement('div', { className: 'goal-header' }, [checkRow, deleteBtn]));
+      card.appendChild(UI.createElement('div', { className: 'goal-header' }, [
+        checkRow,
+        UI.createElement('div', { className: 'exercise-actions' }, [editBtn, deleteBtn])
+      ]));
 
       if (goal.target_reps) {
         card.appendChild(UI.createElement('div', { className: 'goal-reps-hint', textContent: `aim for ${goal.target_reps} reps per set` }));
@@ -1886,6 +1919,25 @@
     }
   }
 
+  function populateDailyGoalForm(goal) {
+    editingDailyGoalId = goal.id;
+    UI.$('daily-goal-fields').style.display = 'block';
+    UI.$('daily-goal-exercise').value = goal.exercise_name;
+    UI.$('daily-goal-cutoff').value = goal.cutoff_time;
+    updateDailyTargetFields(goal.exercise_name);
+    if (goal.target_sets) {
+      UI.$('daily-target-sets-group').style.display = 'block';
+      UI.$('daily-target-sets').value = goal.target_sets;
+    }
+    if (goal.target_reps) UI.$('daily-target-reps').value = goal.target_reps;
+    if (goal.target_minutes) {
+      UI.$('daily-target-mins-group').style.display = 'block';
+      UI.$('daily-target-mins').value = goal.target_minutes;
+    }
+    UI.$('add-daily-goal-btn').textContent = 'Save Changes';
+    UI.$('daily-goal-exercise').focus();
+  }
+
   async function handleAddDailyGoal() {
     const nameInput = UI.$('daily-goal-exercise');
     const cutoffInput = UI.$('daily-goal-cutoff');
@@ -1906,11 +1958,14 @@
     const targetReps = repsVal ? parseInt(repsVal) : null;
 
     const btn = UI.$('add-daily-goal-btn');
-    const originalLabel = btn.textContent;
     btn.disabled = true;
-    btn.textContent = 'Adding...';
+    btn.textContent = 'Saving...';
 
     try {
+      if (editingDailyGoalId) {
+        await FitnessDB.deleteDailyGoal(editingDailyGoalId);
+        editingDailyGoalId = null;
+      }
       await FitnessDB.addDailyGoal(name, targetDate, cutoffTime, targetSets, targetMins, targetReps);
       nameInput.value = '';
       UI.$('daily-target-sets').value = '';
@@ -1919,13 +1974,14 @@
       UI.$('daily-target-sets-group').style.display = 'none';
       UI.$('daily-target-mins-group').style.display = 'none';
       UI.$('daily-goal-fields').style.display = 'none';
-      await loadDailyGoals();
+      await loadDailyGoals(); // sets btn.textContent to the correct mode label
     } catch (err) {
-      console.error('Failed to add daily goal:', err);
-      UI.showToast('Failed to add goal', 'error');
+      console.error('Failed to save daily goal:', err);
+      UI.showToast('Failed to save goal', 'error');
+      editingDailyGoalId = null;
+      btn.textContent = dailyTargetDate === dateOffset(UI.getTodayDate(), 1) ? 'Add for Tomorrow' : 'Add to Today';
     } finally {
       btn.disabled = false;
-      btn.textContent = originalLabel;
     }
   }
 

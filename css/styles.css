@@ -1205,9 +1205,10 @@ button.goals-accordion-header:hover {
 }
 
 .sets-reps-row .daily-target-input {
-  width: 64px;
+  width: 80px;
   flex-shrink: 0;
   text-align: center;
+  padding: var(--spacing-sm);
 }
 
 /* Reps reminder on goal card */
@@ -1294,6 +1295,7 @@ button.goals-accordion-header:hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
   margin-bottom: var(--spacing-sm);
 }
 
