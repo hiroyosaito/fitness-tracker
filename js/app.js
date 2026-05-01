@@ -1130,10 +1130,21 @@
       UI.renderAllActivities(allEntries, elements.allActivitiesList, handleDeleteExercise, 'all-empty-state', openEditModal);
       UI.renderCardioList(allEntries.filter(e => e.type === 'cardio'), elements.cardioList, handleDeleteExercise, 'cardio-empty-state', openEditModal);
       UI.renderClassList(allEntries.filter(e => e.type === 'class'), elements.classList, handleDeleteExercise, 'class-empty-state', openEditModal);
+
+      // Refresh goals silently when logging today's exercises so progress stays current
+      const { weekStart } = getWeekBounds();
+      if (fetchingFor === weekStart.slice(0, 10) || isCurrentWeek(fetchingFor)) {
+        loadGoals().catch(() => {});
+      }
     } catch (error) {
       console.error('Failed to load data:', error);
       UI.showToast('Load error: ' + error.message, 'error');
     }
+  }
+
+  function isCurrentWeek(dateStr) {
+    const { weekStart, weekEnd } = getWeekBounds();
+    return dateStr >= weekStart && dateStr <= weekEnd;
   }
 
   // Convert rows to CSV string
@@ -1629,7 +1640,11 @@
           : `You hit your ${goal.exercise_name} goal for the week!`;
         messageType = 'goal-message-success';
       } else if (sessionsRemaining > 0 && sessionsRemaining >= daysRemaining) {
-        message = `You need ${sessionsRemaining} more ${goal.exercise_name} session${sessionsRemaining !== 1 ? 's' : ''} but only have ${daysRemaining} day${daysRemaining !== 1 ? 's' : ''} left — don't let it slip!`;
+        const daysAfterToday = daysRemaining - 1;
+        const daysPhrase = daysAfterToday === 0
+          ? 'today is the last day'
+          : `only have ${daysAfterToday} day${daysAfterToday !== 1 ? 's' : ''} left after today`;
+        message = `You need ${sessionsRemaining} more ${goal.exercise_name} session${sessionsRemaining !== 1 ? 's' : ''} but ${daysPhrase} — don't let it slip!`;
         messageType = 'goal-message-warning';
       }
 
