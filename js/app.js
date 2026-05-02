@@ -1015,7 +1015,7 @@
     weightInput.type = 'number';
     weightInput.className = 'set-weight';
     weightInput.min = '0';
-    weightInput.step = '2.5';
+    weightInput.step = 'any';
     weightInput.value = weight;
     weightInput.placeholder = '0';
 
