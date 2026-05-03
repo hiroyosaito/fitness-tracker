@@ -53,6 +53,7 @@
   let dailyTargetDate = null;
   let editingDailyGoalId = null;
   let activeInlineEditGoalId = null;
+  let activeInlineWeeklyGoalId = null;
 
   // Handle login screen
   async function setupAuth() {
@@ -2046,6 +2047,98 @@
     cardEl.insertAdjacentElement('afterend', wrapper);
   }
 
+  function closeInlineWeeklyGoalEdit() {
+    activeInlineWeeklyGoalId = null;
+    const wrapper = UI.$('inline-weekly-goal-edit-wrapper');
+    if (wrapper) wrapper.remove();
+  }
+
+  function openInlineWeeklyGoalEdit(goal, cardEl) {
+    if (activeInlineWeeklyGoalId === goal.id) {
+      closeInlineWeeklyGoalEdit();
+      return;
+    }
+    closeInlineWeeklyGoalEdit();
+    activeInlineWeeklyGoalId = goal.id;
+
+    const exerciseInput = UI.createElement('input', {
+      type: 'text',
+      value: goal.exercise_name,
+      autocomplete: 'off'
+    });
+
+    const select = UI.createElement('select', { className: 'goal-edit-select' });
+    for (let d = 1; d <= 7; d++) {
+      const opt = UI.createElement('option', { value: String(d), textContent: `${d} day${d !== 1 ? 's' : ''}` });
+      if (d === goal.target_days) opt.selected = true;
+      select.appendChild(opt);
+    }
+
+    const topRow = UI.createElement('div', {
+      className: 'form-row',
+      style: { gridTemplateColumns: '2fr 1fr' }
+    }, [
+      UI.createElement('div', { className: 'form-group', style: { marginBottom: '0' } }, [
+        UI.createElement('label', { textContent: 'Exercise' }),
+        exerciseInput
+      ]),
+      UI.createElement('div', { className: 'form-group', style: { marginBottom: '0' } }, [
+        UI.createElement('label', { textContent: 'Days / week' }),
+        select
+      ])
+    ]);
+
+    const cancelBtn = UI.createElement('button', {
+      type: 'button',
+      className: 'btn-secondary',
+      textContent: 'Cancel',
+      style: { marginTop: '0', width: 'auto', flex: '0 0 auto' },
+      onClick: () => closeInlineWeeklyGoalEdit()
+    });
+
+    const saveBtn = UI.createElement('button', {
+      type: 'button',
+      className: 'btn-primary',
+      textContent: 'Save Changes',
+      style: { flex: '1', width: 'auto', marginTop: '0' },
+      onClick: async () => {
+        const newName = exerciseInput.value.trim();
+        if (!newName) { UI.showToast('Enter an exercise name', 'error'); return; }
+        const newDays = parseInt(select.value);
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving...';
+        try {
+          const { weekStart } = getWeekBounds();
+          await FitnessDB.deleteWeeklyGoal(goal.id);
+          await FitnessDB.addWeeklyGoal(newName, newDays, weekStart);
+          closeInlineWeeklyGoalEdit();
+          await loadGoals();
+        } catch (err) {
+          console.error('Failed to save goal:', err);
+          UI.showToast('Failed to save', 'error');
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'Save Changes';
+        }
+      }
+    });
+
+    const actionsRow = UI.createElement('div', {
+      style: {
+        display: 'flex',
+        gap: 'var(--spacing-sm)',
+        marginTop: 'var(--spacing-md)',
+        alignItems: 'center'
+      }
+    }, [cancelBtn, saveBtn]);
+
+    const wrapper = UI.createElement('div', {
+      id: 'inline-weekly-goal-edit-wrapper',
+      className: 'inline-goal-edit-wrapper'
+    }, [topRow, actionsRow]);
+
+    cardEl.insertAdjacentElement('afterend', wrapper);
+  }
+
   function populateDailyGoalForm(goal) {
     editingDailyGoalId = goal.id;
     UI.$('daily-goal-fields').style.display = 'block';
@@ -2173,7 +2266,7 @@
         className: 'btn-icon edit',
         innerHTML: '✎',
         title: 'Edit goal',
-        onClick: () => showGoalEditMode(card, goal)
+        onClick: () => openInlineWeeklyGoalEdit(goal, card)
       });
       const deleteBtn = UI.createElement('button', {
         className: 'btn-icon delete',
