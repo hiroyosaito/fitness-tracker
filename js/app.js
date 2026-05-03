@@ -52,6 +52,7 @@
   let dailyNudgeDismissed = false;
   let dailyTargetDate = null;
   let editingDailyGoalId = null;
+  let activeInlineEditGoalId = null;
 
   // Handle login screen
   async function setupAuth() {
@@ -1775,7 +1776,7 @@
         className: 'btn-icon edit',
         innerHTML: '✎',
         title: 'Edit',
-        onClick: () => populateDailyGoalForm(goal)
+        onClick: () => openInlineGoalEdit(goal, card)
       });
       const deleteBtn = UI.createElement('button', {
         className: 'btn-icon delete',
@@ -1836,7 +1837,7 @@
         className: 'btn-icon edit',
         innerHTML: '✎',
         title: 'Edit',
-        onClick: () => populateDailyGoalForm(goal)
+        onClick: () => openInlineGoalEdit(goal, card)
       });
       const deleteBtn = UI.createElement('button', {
         className: 'btn-icon delete',
@@ -1917,6 +1918,132 @@
         }));
       }
     }
+  }
+
+  function closeInlineGoalEdit() {
+    activeInlineEditGoalId = null;
+    const wrapper = UI.$('inline-goal-edit-wrapper');
+    if (wrapper) wrapper.remove();
+  }
+
+  function openInlineGoalEdit(goal, cardEl) {
+    if (activeInlineEditGoalId === goal.id) {
+      closeInlineGoalEdit();
+      return;
+    }
+    closeInlineGoalEdit();
+    activeInlineEditGoalId = goal.id;
+
+    const type = goal.exercise_name.trim() ? detectExerciseType(goal.exercise_name) : 'unknown';
+    const showSets = type === 'strength' || type === 'unknown';
+    const showMins = type === 'cardio' || type === 'unknown';
+
+    const exerciseInput = UI.createElement('input', {
+      type: 'text',
+      value: goal.exercise_name,
+      autocomplete: 'off'
+    });
+    const cutoffInput = UI.createElement('input', {
+      type: 'time',
+      value: goal.cutoff_time
+    });
+
+    const topRow = UI.createElement('div', {
+      className: 'form-row',
+      style: { gridTemplateColumns: '2fr 1fr' }
+    }, [
+      UI.createElement('div', { className: 'form-group', style: { marginBottom: '0' } }, [
+        UI.createElement('label', { textContent: 'Exercise' }),
+        exerciseInput
+      ]),
+      UI.createElement('div', { className: 'form-group', style: { marginBottom: '0' } }, [
+        UI.createElement('label', { textContent: 'By' }),
+        cutoffInput
+      ])
+    ]);
+
+    const setsInput = UI.createElement('input', {
+      type: 'number',
+      className: 'daily-target-input',
+      placeholder: 'sets',
+      min: '1',
+      value: goal.target_sets != null ? String(goal.target_sets) : ''
+    });
+    const repsInput = UI.createElement('input', {
+      type: 'number',
+      className: 'daily-target-input',
+      placeholder: 'reps',
+      min: '1',
+      value: goal.target_reps != null ? String(goal.target_reps) : ''
+    });
+    const setsGroup = UI.createElement('div', {
+      style: { display: showSets ? 'block' : 'none', marginTop: 'var(--spacing-sm)' }
+    }, [
+      UI.createElement('div', { className: 'sets-reps-row' }, [
+        setsInput,
+        UI.createElement('span', { className: 'input-unit-label', textContent: 'sets of' }),
+        repsInput,
+        UI.createElement('span', { className: 'input-unit-label', textContent: 'reps' })
+      ])
+    ]);
+
+    const minsInput = UI.createElement('input', {
+      type: 'number',
+      className: 'daily-target-input',
+      placeholder: 'Target minutes (optional)',
+      min: '1',
+      value: goal.target_minutes != null ? String(goal.target_minutes) : ''
+    });
+    const minsGroup = UI.createElement('div', {
+      style: { display: showMins ? 'block' : 'none', marginTop: 'var(--spacing-sm)' }
+    }, [
+      UI.createElement('div', { className: 'input-with-unit' }, [
+        minsInput,
+        UI.createElement('span', { className: 'input-unit-label', textContent: 'min' })
+      ])
+    ]);
+
+    const cancelBtn = UI.createElement('button', {
+      type: 'button',
+      className: 'btn-secondary',
+      textContent: 'Cancel',
+      style: { marginTop: '0', width: 'auto', flex: '0 0 auto' },
+      onClick: () => closeInlineGoalEdit()
+    });
+    const saveBtn = UI.createElement('button', {
+      type: 'button',
+      className: 'btn-primary',
+      textContent: 'Save Changes',
+      style: { flex: '1', width: 'auto', marginTop: '0' },
+      onClick: () => {
+        UI.$('daily-goal-exercise').value = exerciseInput.value;
+        UI.$('daily-goal-cutoff').value = cutoffInput.value;
+        UI.$('daily-target-sets').value = setsInput.value;
+        UI.$('daily-target-reps').value = repsInput.value;
+        UI.$('daily-target-mins').value = minsInput.value;
+        editingDailyGoalId = goal.id;
+        activeInlineEditGoalId = null;
+        const wrapper = UI.$('inline-goal-edit-wrapper');
+        if (wrapper) wrapper.remove();
+        handleAddDailyGoal();
+      }
+    });
+
+    const actionsRow = UI.createElement('div', {
+      style: {
+        display: 'flex',
+        gap: 'var(--spacing-sm)',
+        marginTop: 'var(--spacing-md)',
+        alignItems: 'center'
+      }
+    }, [cancelBtn, saveBtn]);
+
+    const wrapper = UI.createElement('div', {
+      id: 'inline-goal-edit-wrapper',
+      className: 'inline-goal-edit-wrapper'
+    }, [topRow, setsGroup, minsGroup, actionsRow]);
+
+    cardEl.insertAdjacentElement('afterend', wrapper);
   }
 
   function populateDailyGoalForm(goal) {

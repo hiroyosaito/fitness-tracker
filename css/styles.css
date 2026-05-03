@@ -1291,6 +1291,16 @@ button.goals-accordion-header:hover {
   border-color: var(--success);
 }
 
+.inline-goal-edit-wrapper {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  margin-top: calc(var(--spacing-sm) * -1);
+  margin-bottom: var(--spacing-sm);
+}
+
 .goal-header {
   display: flex;
   justify-content: space-between;
