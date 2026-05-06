@@ -1670,15 +1670,20 @@
     }
   }
 
-  // Return the Monday and Sunday of the current week, plus days elapsed since Monday
+  // Return the Monday and Sunday of the goal week, plus days elapsed since Monday.
+  // On Sunday, returns next week so goals can be set a day early.
   function getWeekBounds() {
     const today = new Date();
     const day = today.getDay(); // 0=Sun, 1=Mon, …, 6=Sat
-    const daysFromMonday = day === 0 ? 6 : day - 1;
     const monday = new Date(today);
-    monday.setDate(today.getDate() - daysFromMonday);
+    if (day === 0) {
+      monday.setDate(today.getDate() + 1); // next Monday
+    } else {
+      monday.setDate(today.getDate() - (day - 1));
+    }
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
+    const daysFromMonday = day === 0 ? 0 : day - 1;
     const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     return { weekStart: fmt(monday), weekEnd: fmt(sunday), daysFromMonday };
   }
