@@ -840,9 +840,29 @@
     };
 
     try {
-      await FitnessDB.addExercise(cardio);
+      const newSession = { duration, distance: distance || 0 };
+      const todayEntries = await FitnessDB.getExercisesByDate(currentDate);
+      const existing = todayEntries.find(e => e.type === 'cardio' && e.name.toLowerCase() === cardio.name.toLowerCase());
+
+      if (existing) {
+        const prevSessions = existing.set_details && existing.set_details.length > 0
+          ? existing.set_details
+          : [{ duration: existing.duration || 0, distance: existing.distance || 0 }];
+        const mergedSessions = [...prevSessions, newSession];
+        await FitnessDB.updateExercise(existing.id, {
+          set_details: JSON.stringify(mergedSessions),
+          duration: mergedSessions.reduce((sum, s) => sum + (s.duration || 0), 0),
+          distance: mergedSessions.reduce((sum, s) => sum + (s.distance || 0), 0),
+          timestamp: Date.now()
+        });
+        UI.showToast('Session added to existing activity!');
+      } else {
+        cardio.set_details = [newSession];
+        await FitnessDB.addExercise(cardio);
+        UI.showToast('Cardio added!');
+      }
+
       historyLoaded = false;
-      UI.showToast('Cardio added!');
       elements.cardioForm.reset();
       elements.bikeTypeGroup.style.display = 'none';
       elements.bikeExtraGroup.style.display = 'none';
@@ -910,9 +930,28 @@
     };
 
     try {
-      await FitnessDB.addExercise(classEntry);
+      const newSession = { duration };
+      const todayEntries = await FitnessDB.getExercisesByDate(currentDate);
+      const existing = todayEntries.find(e => e.type === 'class' && e.name.toLowerCase() === name.toLowerCase());
+
+      if (existing) {
+        const prevSessions = existing.set_details && existing.set_details.length > 0
+          ? existing.set_details
+          : [{ duration: existing.duration || 0 }];
+        const mergedSessions = [...prevSessions, newSession];
+        await FitnessDB.updateExercise(existing.id, {
+          set_details: JSON.stringify(mergedSessions),
+          duration: mergedSessions.reduce((sum, s) => sum + (s.duration || 0), 0),
+          timestamp: Date.now()
+        });
+        UI.showToast('Session added to existing class!');
+      } else {
+        classEntry.set_details = [newSession];
+        await FitnessDB.addExercise(classEntry);
+        UI.showToast('Class added!');
+      }
+
       historyLoaded = false;
-      UI.showToast('Class added!');
       elements.classForm.reset();
       elements.classDuration.value = '60';
       elements.classSuggestions.classList.remove('active');

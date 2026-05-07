@@ -166,14 +166,24 @@ const UI = {
     };
 
     let name = activityNames[cardio.name] || cardio.name;
-    let details = `${cardio.duration} min`;
-    if (cardio.distance > 0) {
-      details += ` · ${cardio.distance} mi`;
+
+    let detailsEl;
+    if (cardio.set_details && cardio.set_details.length > 1) {
+      const lines = cardio.set_details.map(s => {
+        let line = `${s.duration} min`;
+        if (s.distance > 0) line += ` · ${s.distance} mi`;
+        return line;
+      }).join('\n');
+      detailsEl = this.createElement('div', { className: 'exercise-details exercise-sets', textContent: lines });
+    } else {
+      let detailStr = `${cardio.duration} min`;
+      if (cardio.distance > 0) detailStr += ` · ${cardio.distance} mi`;
+      detailsEl = this.createElement('div', { className: 'exercise-details', textContent: detailStr });
     }
 
     const infoChildren = [
       this.createElement('div', { className: 'exercise-name', textContent: name }),
-      this.createElement('div', { className: 'exercise-details', textContent: details })
+      detailsEl
     ];
 
     if (cardio.bike_type || cardio.companion) {
@@ -238,9 +248,17 @@ const UI = {
 
   // Render class item
   renderClassItem(classEntry, onDelete, onEdit) {
+    let durationEl;
+    if (classEntry.set_details && classEntry.set_details.length > 1) {
+      const lines = classEntry.set_details.map(s => `${s.duration} min`).join('\n');
+      durationEl = this.createElement('div', { className: 'exercise-details exercise-sets', textContent: lines });
+    } else {
+      durationEl = this.createElement('div', { className: 'exercise-details', textContent: `${classEntry.duration} min` });
+    }
+
     const infoChildren = [
       this.createElement('div', { className: 'exercise-name', textContent: classEntry.name }),
-      this.createElement('div', { className: 'exercise-details', textContent: `${classEntry.duration} min` })
+      durationEl
     ];
 
     if (classEntry.notes) {
