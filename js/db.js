@@ -285,14 +285,24 @@ async function deleteDailyGoal(id) {
 async function getTodayExerciseStats(date) {
   const userId = getCurrentUserId();
   const result = await supabaseRequest(
-    `exercises?user_id=eq.${userId}&date=eq.${date}&select=name,sets,duration`
+    `exercises?user_id=eq.${userId}&date=eq.${date}&select=name,sets,reps,duration,set_details`
   );
   const stats = {};
   result.forEach(r => {
     const key = r.name.toLowerCase();
-    if (!stats[key]) stats[key] = { sets: 0, duration: 0 };
+    if (!stats[key]) stats[key] = { sets: 0, duration: 0, reps: 0 };
     stats[key].sets += r.sets || 0;
     stats[key].duration += r.duration || 0;
+    let entryReps = 0;
+    if (r.set_details) {
+      try {
+        const details = typeof r.set_details === 'string' ? JSON.parse(r.set_details) : r.set_details;
+        entryReps = details.reduce((sum, s) => sum + (s.reps || 0), 0);
+      } catch { entryReps = (r.sets || 0) * (r.reps || 0); }
+    } else {
+      entryReps = (r.sets || 0) * (r.reps || 0);
+    }
+    stats[key].reps += entryReps;
   });
   return stats;
 }

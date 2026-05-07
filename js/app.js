@@ -1799,11 +1799,15 @@
         checkRow,
         UI.createElement('div', { className: 'exercise-actions' }, [editBtn, deleteBtn])
       ]));
-      if (goal.target_reps) {
-        card.appendChild(UI.createElement('div', { className: 'goal-reps-hint', textContent: `aim for ${goal.target_reps} reps per set` }));
-      }
       if (goal.target_sets || goal.target_minutes) {
-        const targetText = goal.target_sets ? `Target: ${goal.target_sets} sets` : `Target: ${goal.target_minutes} min`;
+        let targetText;
+        if (goal.target_sets && goal.target_reps) {
+          targetText = `Target: ${goal.target_sets * goal.target_reps} reps`;
+        } else if (goal.target_sets) {
+          targetText = `Target: ${goal.target_sets} sets`;
+        } else {
+          targetText = `Target: ${goal.target_minutes} min`;
+        }
         card.appendChild(UI.createElement('div', { className: 'daily-goal-progress-text', textContent: targetText }));
       }
       list.appendChild(card);
@@ -1813,6 +1817,7 @@
   function isDailyGoalDone(goal, exerciseStats) {
     const stats = exerciseStats[goal.exercise_name.toLowerCase()];
     if (!stats) return false;
+    if (goal.target_sets && goal.target_reps) return stats.reps >= goal.target_sets * goal.target_reps;
     if (goal.target_sets) return stats.sets >= goal.target_sets;
     if (goal.target_minutes) return stats.duration >= goal.target_minutes;
     return true;
@@ -1833,7 +1838,7 @@
 
     goals.forEach(goal => {
       const done = isDailyGoalDone(goal, exerciseStats);
-      const stats = exerciseStats[goal.exercise_name.toLowerCase()] || { sets: 0, duration: 0 };
+      const stats = exerciseStats[goal.exercise_name.toLowerCase()] || { sets: 0, duration: 0, reps: 0 };
       const card = UI.createElement('div', { className: 'goal-card' + (done ? ' goal-completed' : '') });
 
       const checkIcon = UI.createElement('span', { className: 'daily-check-icon', textContent: done ? '✅' : '⬜' });
@@ -1862,19 +1867,23 @@
         UI.createElement('div', { className: 'exercise-actions' }, [editBtn, deleteBtn])
       ]));
 
-      if (goal.target_reps) {
-        card.appendChild(UI.createElement('div', { className: 'goal-reps-hint', textContent: `aim for ${goal.target_reps} reps per set` }));
-      }
-
       // Progress bar for goals with a target
-      if (goal.target_sets || goal.target_minutes) {
+      if (goal.target_sets && goal.target_reps) {
+        const target = goal.target_sets * goal.target_reps;
+        const current = stats.reps;
+        const pct = Math.min(100, Math.round((current / target) * 100));
+        card.appendChild(UI.createElement('div', { className: 'daily-goal-progress-text', textContent: `${current} / ${target} reps` }));
+        card.appendChild(UI.createElement('div', { className: 'goal-bar-track' }, [
+          UI.createElement('div', { className: 'goal-bar-fill', style: { width: pct + '%' } })
+        ]));
+      } else if (goal.target_sets || goal.target_minutes) {
         const current = goal.target_sets ? stats.sets : stats.duration;
         const target = goal.target_sets || goal.target_minutes;
         const unit = goal.target_sets ? 'sets' : 'min';
         const pct = Math.min(100, Math.round((current / target) * 100));
         card.appendChild(UI.createElement('div', { className: 'daily-goal-progress-text', textContent: `${current} / ${target} ${unit}` }));
         card.appendChild(UI.createElement('div', { className: 'goal-bar-track' }, [
-          UI.createElement('div', { className: 'goal-bar-fill' + (done ? '' : ''), style: { width: pct + '%' } })
+          UI.createElement('div', { className: 'goal-bar-fill', style: { width: pct + '%' } })
         ]));
       }
 
@@ -1905,7 +1914,11 @@
         dailyNudgeDismissed = true;
         const timeStr = formatCutoffTime(nudgeGoals[0].cutoff_time);
         const parts = nudgeGoals.map(g => {
-          const s = exerciseStats[g.exercise_name.toLowerCase()] || { sets: 0, duration: 0 };
+          const s = exerciseStats[g.exercise_name.toLowerCase()] || { sets: 0, duration: 0, reps: 0 };
+          if (g.target_sets && g.target_reps) {
+            const rem = Math.max(1, g.target_sets * g.target_reps - s.reps);
+            return `${rem} more rep${rem !== 1 ? 's' : ''} of ${g.exercise_name}`;
+          }
           if (g.target_sets) {
             const rem = Math.max(1, g.target_sets - s.sets);
             return `${rem} more set${rem !== 1 ? 's' : ''} of ${g.exercise_name}`;
