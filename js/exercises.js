@@ -8,6 +8,7 @@ const MUSCLE_GROUPS = {
   triceps: { name: 'Triceps', color: '#f39c12' },
   forearms: { name: 'Forearms', color: '#d35400' },
   core: { name: 'Core', color: '#1abc9c' },
+  abs: { name: 'Abs', color: '#48c9b0' },
   quads: { name: 'Quads', color: '#2ecc71' },
   hamstrings: { name: 'Hamstrings', color: '#27ae60' },
   glutes: { name: 'Glutes', color: '#16a085' },
