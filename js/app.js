@@ -371,6 +371,7 @@
         onClick: () => {
           UI.$('cardio-other-name').value = name;
           container.classList.remove('active');
+          prefillCardioFromLastSession(name);
           elements.cardioDuration.focus();
         }
       });
@@ -474,7 +475,11 @@
       if (!isWalkRun) { elements.walkRunCompanionInput.style.display = 'none'; }
       UI.$('cardio-other-group').style.display = isOther ? 'block' : 'none';
       UI.$('cardio-other-suggestions').classList.remove('active');
+      elements.cardioDuration.value = 30;
+      elements.cardioDistance.value = 0;
+      elements.cardioNotes.value = '';
       if (isOther) { UI.$('cardio-other-name').focus(); showCustomCardioSuggestions(''); }
+      else { prefillCardioFromLastSession(type); }
     });
 
     // Show/hide companion name inputs
@@ -493,6 +498,11 @@
     UI.$('cardio-other-name').addEventListener('input', (e) => showCustomCardioSuggestions(e.target.value));
     UI.$('cardio-other-name').addEventListener('blur', () => {
       setTimeout(() => UI.$('cardio-other-suggestions').classList.remove('active'), 200);
+      const name = UI.$('cardio-other-name').value.trim();
+      const isDefault = parseInt(elements.cardioDuration.value) === 30 &&
+        parseFloat(elements.cardioDistance.value) === 0 &&
+        !elements.cardioNotes.value.trim();
+      if (name && isDefault) prefillCardioFromLastSession(name);
     });
 
     // Class name autocomplete
@@ -1117,6 +1127,19 @@
       buildSetRow(container, best.weight, best.reps);
     } else {
       buildSetRow(container, lastExercise.weight || 0, lastExercise.reps || defaultReps);
+    }
+  }
+
+  async function prefillCardioFromLastSession(name) {
+    try {
+      const last = await FitnessDB.getLastExerciseByName(name);
+      if (last) {
+        elements.cardioDuration.value = last.duration || 30;
+        elements.cardioDistance.value = last.distance || 0;
+        elements.cardioNotes.value = last.notes || '';
+      }
+    } catch (error) {
+      console.error('Failed to fetch last cardio session:', error);
     }
   }
 
