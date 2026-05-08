@@ -1113,12 +1113,10 @@
     container.innerHTML = '';
     const defaultReps = ExerciseDB.EXERCISES.find(e => e.name === name)?.defaultReps || 10;
     if (lastExercise.set_details && lastExercise.set_details.length > 0) {
-      lastExercise.set_details.forEach(s => buildSetRow(container, s.weight, s.reps));
+      const best = lastExercise.set_details.reduce((a, b) => (b.weight > a.weight ? b : a));
+      buildSetRow(container, best.weight, best.reps);
     } else {
-      const setCount = lastExercise.sets || 1;
-      for (let i = 0; i < setCount; i++) {
-        buildSetRow(container, lastExercise.weight || 0, lastExercise.reps || defaultReps);
-      }
+      buildSetRow(container, lastExercise.weight || 0, lastExercise.reps || defaultReps);
     }
   }
 
