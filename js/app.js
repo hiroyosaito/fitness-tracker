@@ -1732,6 +1732,7 @@
 
   // Return the Monday and Sunday of the goal week, plus days elapsed since Monday.
   // On Sunday, returns next week so goals can be set a day early.
+  // exerciseStart is today when it's Sunday (so today's sessions count toward the upcoming week).
   function getWeekBounds() {
     const today = new Date();
     const day = today.getDay(); // 0=Sun, 1=Mon, …, 6=Sat
@@ -1745,7 +1746,8 @@
     sunday.setDate(monday.getDate() + 6);
     const daysFromMonday = day === 0 ? 0 : day - 1;
     const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-    return { weekStart: fmt(monday), weekEnd: fmt(sunday), daysFromMonday };
+    const exerciseStart = day === 0 ? fmt(today) : fmt(monday);
+    return { weekStart: fmt(monday), weekEnd: fmt(sunday), daysFromMonday, exerciseStart };
   }
 
   function detectExerciseType(name) {
@@ -2285,7 +2287,7 @@
   }
 
   async function loadGoals() {
-    const { weekStart, weekEnd, daysFromMonday } = getWeekBounds();
+    const { weekStart, weekEnd, daysFromMonday, exerciseStart } = getWeekBounds();
     const daysRemaining = 7 - daysFromMonday; // includes today
 
     UI.$('goals-list').innerHTML = '<p class="empty-state" style="padding:var(--spacing-md)">Loading...</p>';
@@ -2294,7 +2296,7 @@
     try {
       const [goals, exerciseCounts] = await Promise.all([
         FitnessDB.getWeeklyGoals(weekStart),
-        FitnessDB.getWeekExerciseCounts(weekStart, weekEnd)
+        FitnessDB.getWeekExerciseCounts(exerciseStart, weekEnd)
       ]);
       renderGoals(goals, exerciseCounts, daysRemaining, weekStart);
     } catch (err) {
