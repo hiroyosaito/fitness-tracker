@@ -2333,12 +2333,14 @@
           ? `You hit your ${goal.exercise_name} goal for the week — with ${spare} day${spare !== 1 ? 's' : ''} to spare!`
           : `You hit your ${goal.exercise_name} goal for the week!`;
         messageType = 'goal-message-success';
-      } else if (sessionsRemaining > 0 && sessionsRemaining >= daysRemaining) {
-        const daysAfterToday = daysRemaining - 1;
-        const daysPhrase = daysAfterToday === 0
-          ? 'today is the last day'
-          : `only have ${daysAfterToday} day${daysAfterToday !== 1 ? 's' : ''} left after today`;
-        message = `You need ${sessionsRemaining} more ${goal.exercise_name} session${sessionsRemaining !== 1 ? 's' : ''} but ${daysPhrase} — don't let it slip!`;
+      } else if (sessionsRemaining > daysRemaining) {
+        message = `This week got away from you — do what you can and reset strong next week!`;
+        messageType = 'goal-message-warning';
+      } else if (sessionsRemaining === daysRemaining) {
+        message = `You need to do ${goal.exercise_name} every remaining day this week — you can still do this!`;
+        messageType = 'goal-message-warning';
+      } else if (sessionsRemaining > 0) {
+        message = `You need ${sessionsRemaining} more ${goal.exercise_name} session${sessionsRemaining !== 1 ? 's' : ''} — don't let it slip!`;
         messageType = 'goal-message-warning';
       }
 
